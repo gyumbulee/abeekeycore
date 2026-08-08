@@ -67,7 +67,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     /*
     |----------------------------------------------------------------------
-    | Client Portal Routes (Phase 2 — to be filled in next)
+    | Client Portal Routes
     |----------------------------------------------------------------------
     */
     Route::prefix('portal')->group(function () {

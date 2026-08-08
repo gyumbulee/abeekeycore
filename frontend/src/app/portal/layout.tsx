@@ -9,6 +9,7 @@ const PORTAL_NAV = [
   { href: '/portal/invoices', label: 'Invoices' },
   { href: '/portal/quotations', label: 'Quotations' },
   { href: '/portal/contracts', label: 'Contracts' },
+  { href: '/portal/domains', label: 'Domains' },
   { href: '/portal/transactions', label: 'Transactions' },
 ];
 

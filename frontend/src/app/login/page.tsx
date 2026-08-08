@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/lib/auth-context';
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect');
   const { login, register } = useAuth();
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -31,7 +33,12 @@ export default function LoginPage() {
         mode === 'login'
           ? await login({ email: form.email, password: form.password })
           : await register(form);
-      router.push(user.role === 'admin' ? '/admin' : '/portal');
+
+      if (redirectTo && user.role !== 'admin') {
+        router.push(redirectTo);
+      } else {
+        router.push(user.role === 'admin' ? '/admin' : '/portal');
+      }
     } catch (err) {
       setStatus('error');
       setErrorMsg(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
@@ -144,5 +151,13 @@ export default function LoginPage() {
 
       <Footer />
     </>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
   );
 }

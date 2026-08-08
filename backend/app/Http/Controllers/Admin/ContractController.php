@@ -1,44 +1,88 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
-use App\Mail\ContactMessageReceived;
-use App\Models\ContactMessage;
+use App\Http\Controllers\Controller;
+use App\Models\Contract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 
-class ContactController extends Controller
+class ContractController extends Controller
 {
     /**
-     * Store a new contact form submission and notify the Abeekey team.
+     * List all contracts.
+     */
+    public function index(): JsonResponse
+    {
+        $contracts = Contract::with('user:id,name,email')
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'data' => $contracts,
+        ]);
+    }
+
+    /**
+     * Create a new contract.
      */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'email' => ['required', 'email', 'max:150'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'company' => ['nullable', 'string', 'max:150'],
-            'subject' => ['nullable', 'string', 'max:150'],
-            'message' => ['required', 'string', 'max:5000'],
+            'user_id' => [
+                'required',
+                'integer',
+                'exists:users,id',
+            ],
+            'contract_number' => [
+                'required',
+                'string',
+                'max:100',
+                'unique:contracts,contract_number',
+            ],
+            'title' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+            'summary' => [
+                'nullable',
+                'string',
+            ],
+            'status' => [
+                'required',
+                'string',
+                Rule::in([
+    'draft',
+    'sent',
+    'signed',
+    'active',
+    'completed',
+    'terminated',
+]),
+            ],
+            'start_date' => [
+                'nullable',
+                'date',
+            ],
+            'end_date' => [
+                'nullable',
+                'date',
+                'after_or_equal:start_date',
+            ],
+            'file_path' => [
+                'nullable',
+                'string',
+                'max:500',
+            ],
         ]);
 
-        $contact = ContactMessage::create($validated);
-
-        // The submission is already saved above — a broken/misconfigured mail
-        // server should never turn a successful submission into a 500 error.
-        try {
-            Mail::to(config('mail.contact_notify', 'info@abeekey.com'))
-                ->send(new ContactMessageReceived($contact));
-        } catch (\Throwable $e) {
-            Log::error('Failed to send contact notification email: '.$e->getMessage());
-        }
+        $contract = Contract::create($validated);
 
         return response()->json([
-            'message' => 'Thanks — we\'ve received your message and will respond shortly.',
-            'data' => $contact,
+            'message' => 'Contract created successfully.',
+            'data' => $contract->load('user:id,name,email'),
         ], 201);
     }
 }

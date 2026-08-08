@@ -26,12 +26,8 @@ class ContactController extends Controller
 
         $contact = ContactMessage::create($validated);
 
-        try {
-    Mail::to(config('mail.contact_notify', 'info@abeekey.com'))
-        ->send(new ContactMessageReceived($contact));
-} catch (\Throwable $e) {
-    Log::error('Failed to send contact notification email: '.$e->getMessage());
-}
+        Mail::to(config('mail.contact_notify', 'info@abeekey.com'))
+            ->send(new ContactMessageReceived($contact));
 
         return response()->json([
             'message' => 'Thanks — we\'ve received your message and will respond shortly.',

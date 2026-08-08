@@ -1,6 +1,7 @@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import HeroNetwork from '@/components/HeroNetwork';
+import DomainSearch from '@/components/DomainSearch';
 
 const services = [
   { icon: '💻', title: 'Custom Software Development', desc: 'Bespoke systems built around how your business actually works — not the other way around.' },
@@ -58,6 +59,24 @@ export default function HomePage() {
         </div>
       </header>
 
+      <section id="domain-search" className="py-20 bg-navy-primary">
+        <div className="max-w-6xl mx-auto px-8">
+          <div className="max-w-[620px] mx-auto mb-10 text-center">
+            <div className="font-mono text-[13px] font-medium text-[#93c5fd] uppercase tracking-widest mb-3.5">
+              Get Online
+            </div>
+            <h2 className="font-heading font-bold text-white text-[clamp(26px,3.2vw,34px)] mb-3.5">
+              Find and register your domain
+            </h2>
+            <p className="text-white/70">
+              Search available domains and register in minutes — hosted through our reseller partnership
+              with ConnectReseller.
+            </p>
+          </div>
+          <DomainSearch />
+        </div>
+      </section>
+
       <section className="py-24">
         <div className="max-w-6xl mx-auto px-8">
           <div className="max-w-[620px] mx-auto mb-14 text-center">
@@ -112,7 +131,7 @@ export default function HomePage() {
               </div>
               <div className="bg-white/[0.06] border border-white/10 backdrop-blur rounded-md p-5">
                 <div className="font-mono text-xs text-[#93c5fd] uppercase tracking-wider mb-2">Founder</div>
-                <p className="text-[14.5px] text-white/85">Ibrahim Muazu Muazu — Founder &amp; CEO, Abeekey</p>
+                <p className="text-[14.5px] text-white/85">Ibrahim Muazu Muazu — Founder &amp; Lead Software Engineer</p>
               </div>
             </div>
           </div>

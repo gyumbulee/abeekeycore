@@ -9,6 +9,7 @@ const ADMIN_NAV = [
   { href: '/admin/leads', label: 'Leads (CRM)' },
   { href: '/admin/invoices', label: 'Invoices' },
   { href: '/admin/contracts', label: 'Contracts' },
+  { href: '/admin/domains', label: 'Domains' },
   { href: '/admin/transactions', label: 'Transactions' },
 ];
 

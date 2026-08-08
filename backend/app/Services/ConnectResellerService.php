@@ -49,32 +49,78 @@ class ConnectResellerService
      * We defensively look for a few likely key names since the exact
      * response shape is unconfirmed.
      */
-    public function checkAvailability(string $domainName, string $tld): array
+    /**
+     * TODO verify endpoint: GET {baseUrl}/domains/checkAvailability
+     * Checks availability for one domain across multiple TLDs concurrently
+     * (fired in parallel via Http::pool, not one-by-one) — looping sequentially
+     * with N TLDs × a per-request timeout can exceed PHP's max_execution_time,
+     * which is exactly what happened before this was made concurrent.
+     *
+     * Expected-ish response per TLD: ['available' => bool, ...]. We defensively
+     * look for a few likely key names since the exact response shape is
+     * unconfirmed — see the class docblock above for why.
+     *
+     * @param  array<string>  $tlds  e.g. ['.com', '.net']
+     * @return array<string, array{available: bool|null, raw: array}> keyed by tld
+     */
+    public function checkAvailabilityBulk(string $domainName, array $tlds): array
     {
-        try {
-            $response = Http::timeout(15)->get("{$this->baseUrl}/domains/checkAvailability", [
-                ...$this->authParams(),
-                'domainName' => $domainName,
-                'tld' => ltrim($tld, '.'),
-            ]);
+        $responses = Http::pool(fn ($pool) => collect($tlds)->map(
+            fn ($tld) => $pool->as($tld)
+                ->timeout(8)
+                ->connectTimeout(5)
+                ->get("{$this->baseUrl}/domains/checkAvailability", [
+                    ...$this->authParams(),
+                    'domainName' => $domainName,
+                    'tld' => ltrim($tld, '.'),
+                ])
+        )->all());
+
+        $results = [];
+
+        foreach ($tlds as $tld) {
+            $response = $responses[$tld] ?? null;
+
+            if ($response instanceof \Throwable) {
+                Log::warning("ConnectReseller availability check failed for {$domainName}{$tld}: ".$response->getMessage());
+                $results[$tld] = ['available' => null, 'error' => true];
+
+                continue;
+            }
 
             $data = $response->json() ?? [];
+            $available = null;
 
-            $available = $data['available']
-                ?? $data['isAvailable']
-                ?? (($data['status'] ?? null) === 'available')
-                ?? null;
+            if (array_key_exists('available', $data)) {
+                $available = (bool) $data['available'];
+            } elseif (array_key_exists('isAvailable', $data)) {
+                $available = (bool) $data['isAvailable'];
+            } elseif (isset($data['status'])) {
+                $available = $data['status'] === 'available';
+            }
 
-            return [
-                'domain' => $domainName.$tld,
-                'available' => (bool) $available,
-                'raw' => $data,
-            ];
-        } catch (\Throwable $e) {
-            Log::warning("ConnectReseller availability check failed for {$domainName}{$tld}: ".$e->getMessage());
+            if ($available === null || ! $response->successful()) {
+                Log::warning("ConnectReseller availability check returned an unrecognised response for {$domainName}{$tld}", [
+                    'http_status' => $response->status(),
+                    'raw' => $data,
+                ]);
+            }
 
-            return ['domain' => $domainName.$tld, 'available' => null, 'error' => true];
+            $results[$tld] = ['available' => $available, 'raw' => $data];
         }
+
+        return $results;
+    }
+
+    /**
+     * Single-TLD convenience wrapper around checkAvailabilityBulk(), kept for
+     * any caller that only needs one TLD at a time.
+     */
+    public function checkAvailability(string $domainName, string $tld): array
+    {
+        $result = $this->checkAvailabilityBulk($domainName, [$tld])[$tld];
+
+        return ['domain' => $domainName.$tld, ...$result];
     }
 
     /**
