@@ -48,7 +48,14 @@ class DomainController extends Controller
             'registrant.country' => ['required', 'string', 'max:2'], // ISO 2-letter, e.g. NG
         ]);
 
-        $pricing = config("domains.tlds.{$validated['tld']}");
+        $allTlds = config('domains.tlds', []);
+        $pricing = $allTlds[$validated['tld']] ?? null;
+
+        if (! is_array($pricing)) {
+            return response()->json([
+                'message' => 'That TLD is not currently supported. Please try a different domain.',
+            ], 422);
+        }
         $years = $validated['years'];
         $domainName = strtolower($validated['domain']);
         $user = $request->user();
