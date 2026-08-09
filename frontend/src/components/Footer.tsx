@@ -32,8 +32,8 @@ export default function Footer() {
           <div>
             <h4 className="font-body text-xs font-semibold text-white/90 uppercase tracking-wider mb-4">Legal</h4>
             <span className="block text-sm mb-3">RC 8152454</span>
-            <a href="#" className="block text-sm mb-3 hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="block text-sm mb-3 hover:text-white transition-colors">Terms of Service</a>
+            <a href="/privacy" className="block text-sm mb-3 hover:text-white transition-colors">Privacy Policy</a>
+            <a href="/terms" className="block text-sm mb-3 hover:text-white transition-colors">Terms of Service</a>
           </div>
         </div>
 

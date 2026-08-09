@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import Footer from '@/components/Footer';
+import WhatsAppButton from '@/components/WhatsAppButton';
 
 const PORTAL_NAV = [
   { href: '/portal', label: 'Dashboard' },
@@ -45,6 +47,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         <div className="max-w-6xl mx-auto px-6 sm:px-8 py-4 flex items-center justify-between">
           <div className="font-heading font-bold text-white text-lg">Abeekey Portal</div>
           <div className="flex items-center gap-5">
+            <WhatsAppButton variant="dark" />
             <span className="text-sm text-white/70 hidden sm:inline">{user.name}</span>
             <button
               onClick={() => logout().then(() => router.push('/'))}
@@ -68,6 +71,10 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       </header>
 
       <main className="max-w-6xl mx-auto px-6 sm:px-8 py-10">{children}</main>
+
+      <div className="print:hidden">
+        <Footer />
+      </div>
     </div>
   );
 }

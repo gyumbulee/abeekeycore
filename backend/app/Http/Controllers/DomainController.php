@@ -22,15 +22,21 @@ class DomainController extends Controller
         $keyword = strtolower($validated['query']);
         $tlds = config('domains.tlds', []);
 
-        $availability = $this->connectReseller->checkAvailabilityBulk($keyword, array_keys($tlds));
+        $fullDomains = array_map(fn ($tld) => $keyword.$tld, array_keys($tlds));
+
+        // One request checks every TLD at once (ConnectReseller's
+        // bulkDomainCheck) — no more looping per TLD.
+        $availability = $this->connectReseller->checkAvailabilityBulk($fullDomains);
 
         $results = [];
 
         foreach ($tlds as $tld => $pricing) {
+            $fullDomain = $keyword.$tld;
+
             $results[] = [
-                'domain' => $keyword.$tld,
+                'domain' => $fullDomain,
                 'tld' => $tld,
-                'available' => $availability[$tld]['available'] ?? null, // true | false | null (null = couldn't reach registrar)
+                'available' => $availability[$fullDomain] ?? null, // true | false | null (null = couldn't reach registrar)
                 'price' => $pricing['sale_price'],
                 'currency' => config('domains.default_currency', 'NGN'),
             ];

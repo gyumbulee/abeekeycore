@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import WhatsAppButton from './WhatsAppButton';
 
 const links = [
   { href: '/services', label: 'Services' },
@@ -37,6 +38,7 @@ export default function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-4">
+          <WhatsAppButton variant="dark" />
           <Link
             href="/login"
             className="text-sm font-medium text-white/75 hover:text-white transition-colors"
@@ -78,6 +80,7 @@ export default function Navbar() {
         }`}
       >
         <div className="px-6 py-5 flex flex-col gap-1 bg-navy-primary/95">
+          <WhatsAppButton variant="dark" className="py-3 border-b border-white/5" />
           {links.map((link) => (
             <Link
               key={link.href}
