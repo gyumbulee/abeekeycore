@@ -39,7 +39,7 @@ export default function Footer() {
 
         <div className="flex flex-wrap justify-between items-center gap-3 pt-7 text-xs">
           <div>© 2026 Abeekey. All rights reserved.</div>
-          <div className="font-mono">RC: 8152454</div>
+          <div className="font-mono">RC 8152454 · Registered Nigerian Technology Company</div>
         </div>
       </div>
     </footer>
