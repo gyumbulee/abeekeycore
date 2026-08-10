@@ -27,14 +27,17 @@ export default function HomePage() {
             RC 8152454 · Registered Nigerian Technology Company
           </div>
           <h1 className="font-heading font-bold text-white text-[clamp(38px,5.5vw,62px)] leading-[1.15] mb-5">
-            Technology that moves{' '}
-            <span className="bg-gradient-to-r from-[#93c5fd] via-blue-accent to-[#93c5fd] bg-clip-text text-transparent">
-              business forward.
-            </span>
-          </h1>
+  Software &amp; Digital Solutions
+  <br />
+  <span className="bg-gradient-to-r from-[#93c5fd] via-blue-accent to-[#93c5fd] bg-clip-text text-transparent">
+    Built for Business.
+  </span>
+</h1>
           <p className="text-white/75 text-lg max-w-[560px] mx-auto mb-10">
-            Abeekey designs, builds, and maintains secure, scalable digital solutions for businesses, governments, and institutions across Nigeria and Africa.
-          </p>
+  Abeekey designs, builds, and maintains custom software, websites, mobile
+  apps, fintech systems, and digital solutions for businesses, governments,
+  and institutions across Nigeria and Africa.
+    </p>
           <div className="flex gap-3.5 justify-center flex-wrap">
             <a href="/contact" className="px-7 py-3.5 rounded-sm font-semibold text-white bg-gradient-to-br from-blue-primary to-blue-accent shadow-[0_4px_18px_rgba(37,99,235,0.35)]">
               Start a Project →

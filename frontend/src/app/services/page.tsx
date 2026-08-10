@@ -1,5 +1,22 @@
+import type { Metadata } from 'next';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+
+export const metadata: Metadata = {
+  title: 'Software, Web & IT Services in Nigeria',
+  description:
+    'Abeekey provides custom software development, web and mobile app development, cloud solutions, API integration, cybersecurity, fintech solutions, IT consulting, business automation, and technical support in Nigeria.',
+  alternates: {
+    canonical: '/services',
+  },
+  openGraph: {
+    title: 'Software, Web & IT Services in Nigeria | Abeekey',
+    description:
+      'Explore Abeekey technology services including custom software, websites, mobile apps, cloud infrastructure, APIs, fintech systems, cybersecurity, IT consulting, and business automation.',
+    url: 'https://abeekey.com/services',
+    type: 'website',
+  },
+};
 
 const categories = [
   {
