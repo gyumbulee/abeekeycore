@@ -5,23 +5,43 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { api } from '@/lib/api';
 
+declare global {
+  interface Window {
+    fbq?: (...args: unknown[]) => void;
+  }
+}
+
 export default function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', subject: '', message: '' });
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setStatus('sending');
-    try {
-      await api.submitContact(form);
-      setStatus('sent');
-      setForm({ name: '', email: '', phone: '', company: '', subject: '', message: '' });
-    } catch (err) {
-      setStatus('error');
-      setErrorMsg(err instanceof Error ? err.message : 'Something went wrong.');
+  e.preventDefault();
+  setStatus('sending');
+  setErrorMsg('');
+
+  try {
+    await api.submitContact(form);
+
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'Lead');
     }
+
+    setStatus('sent');
+    setForm({
+      name: '',
+      email: '',
+      phone: '',
+      company: '',
+      subject: '',
+      message: '',
+    });
+  } catch (err) {
+    setStatus('error');
+    setErrorMsg(err instanceof Error ? err.message : 'Something went wrong.');
   }
+}
 
   return (
     <>

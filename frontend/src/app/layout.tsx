@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
+import MetaPixel from '@/components/MetaPixel';
 
 const siteUrl = 'https://abeekey.com';
 
@@ -78,6 +79,7 @@ export default function RootLayout({
     <html lang="en-NG">
       <body className="font-body">
         <AuthProvider>{children}</AuthProvider>
+        <MetaPixel />
       </body>
     </html>
   );
