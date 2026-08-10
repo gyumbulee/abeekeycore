@@ -17,10 +17,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         User::firstOrCreate(
-            ['email' => 'admin@abeekey.com'],
+            ['email' => 'info@abeekey.com'],
             [
                 'name' => 'Ibrahim Muazu Muazu',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('5626=M&h'),
                 'role' => 'admin',
             ]
         );
@@ -48,7 +48,7 @@ class DatabaseSeeder extends Seeder
                 ],
                 'notes' => 'Payment due within 30 days of issue.',
             ]
-        );
+        )
 
         $paidInvoice = Invoice::firstOrCreate(
             ['invoice_number' => 'INV-2026-0002'],
