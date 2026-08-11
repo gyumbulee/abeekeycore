@@ -14,7 +14,12 @@ class TrainingApplication extends Model
         'email',
         'phone',
         'course',
+        'learning_goal',
+        'experience_level',
+        'preferred_schedule',
+        'delivery_mode',
         'preferred_batch',
+        'notes',
         'payment_status',
     ];
 }

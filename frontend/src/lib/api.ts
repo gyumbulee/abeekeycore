@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+﻿const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 const API_ROOT = API_URL.replace(/\/api\/?$/, '');
 
 /**
@@ -60,8 +60,11 @@ export interface QuotationPayload {
 export interface TrainingCourse {
   slug: string;
   name: string;
-  price: number;
-  sessions: number;
+  category: string;
+  icon: string;
+  level: string;
+  description: string;
+  featured: boolean;
 }
 
 export interface TrainingApplicationPayload {
@@ -69,7 +72,12 @@ export interface TrainingApplicationPayload {
   email: string;
   phone: string;
   course: string;
+  learning_goal?: string;
+  experience_level?: string;
+  preferred_schedule?: string;
+  delivery_mode?: string;
   preferred_batch?: string;
+  notes?: string;
 }
 
 export interface AuthUser {
