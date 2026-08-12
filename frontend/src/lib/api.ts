@@ -1,6 +1,18 @@
 ﻿const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 const API_ROOT = API_URL.replace(/\/api\/?$/, '');
 
+export class ApiError extends Error {
+  status: number;
+  body: Record<string, unknown>;
+
+  constructor(message: string, status: number, body: Record<string, unknown>) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.body = body;
+  }
+}
+
 /**
  * Sanctum SPA auth requires this to be called once before register/login
  * (it sets the XSRF-TOKEN cookie that Laravel then expects back on the
@@ -31,7 +43,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.message || 'Request failed');
+    throw new ApiError(body.message || 'Request failed', res.status, body);
   }
 
   if (res.status === 204) return undefined as T;
@@ -141,6 +153,21 @@ export interface Contract {
   file_path: string | null;
 }
 
+export interface ContactMessageRecord {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  company: string | null;
+  subject: string | null;
+  message: string;
+  status: 'new' | 'replied';
+  reply_message: string | null;
+  replied_at: string | null;
+  is_registered_user: boolean;
+  created_at: string;
+}
+
 export interface DomainSearchResult {
   domain: string;
   tld: string;
@@ -245,23 +272,31 @@ export interface CreateContractPayload {
 export const adminApi = {
   getLeads: (status?: string) =>
     request<{ data: Lead[] }>(`/admin/leads${status ? `?status=${status}` : ''}`),
-  getLead: (id: number) => request<{ data: Lead }>(`/admin/leads/${id}`),
+
+  getLead: (id: number) =>
+    request<{ data: Lead }>(`/admin/leads/${id}`),
+
   convertLead: (id: number, payload: ConvertLeadPayload) =>
     request<{ data: PortalQuotation; message: string }>(`/admin/leads/${id}/convert`, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
-  getClients: () => request<{ data: ClientAccount[] }>('/admin/clients'),
+  getClients: () =>
+    request<{ data: ClientAccount[] }>('/admin/clients'),
 
-  getInvoices: () => request<{ data: (Invoice & { user: ClientAccount })[] }>('/admin/invoices'),
+  getInvoices: () =>
+    request<{ data: (Invoice & { user: ClientAccount })[] }>('/admin/invoices'),
+
   createInvoice: (payload: CreateInvoicePayload) =>
     request<{ data: Invoice & { user: ClientAccount } }>('/admin/invoices', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
-  getContracts: () => request<{ data: (Contract & { user: ClientAccount })[] }>('/admin/contracts'),
+  getContracts: () =>
+    request<{ data: (Contract & { user: ClientAccount })[] }>('/admin/contracts'),
+
   createContract: (payload: CreateContractPayload) =>
     request<{ data: Contract & { user: ClientAccount } }>('/admin/contracts', {
       method: 'POST',
@@ -273,66 +308,165 @@ export const adminApi = {
 
   getDomainOrders: () =>
     request<{ data: (DomainOrder & { user: ClientAccount })[] }>('/admin/domains'),
+
+  getContacts: (status?: string) =>
+    request<{ data: ContactMessageRecord[] }>(
+      `/admin/contacts${status ? `?status=${status}` : ''}`
+    ),
+
+  replyToContact: (id: number, reply: string) =>
+    request<{ data: ContactMessageRecord }>(`/admin/contacts/${id}/reply`, {
+      method: 'POST',
+      body: JSON.stringify({ reply }),
+    }),
 };
 
 export const api = {
-  getServices: () => request<{ data: { slug: string; name: string; icon: string }[] }>('/services'),
+  getServices: () =>
+    request<{ data: { slug: string; name: string; icon: string }[] }>('/services'),
+
   submitContact: (payload: ContactPayload) =>
-    request('/contact', { method: 'POST', body: JSON.stringify(payload) }),
+    request('/contact', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
   submitQuotation: (payload: QuotationPayload) =>
-    request('/quotation-requests', { method: 'POST', body: JSON.stringify(payload) }),
-  getTrainingCourses: () => request<{ data: TrainingCourse[] }>('/training/courses'),
+    request('/quotation-requests', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getTrainingCourses: () =>
+    request<{ data: TrainingCourse[] }>('/training/courses'),
+
   submitTrainingApplication: (payload: TrainingApplicationPayload) =>
-    request('/training/applications', { method: 'POST', body: JSON.stringify(payload) }),
+    request('/training/applications', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
 
   // --- Auth (Sanctum SPA / cookie-based) ---
   register: async (payload: RegisterPayload) => {
     await getCsrfCookie();
-    return request<{ data: AuthUser }>('/auth/register', { method: 'POST', body: JSON.stringify(payload) });
+
+    return request<{
+      message: string;
+      data: {
+        email: string;
+        requires_verification: true;
+      };
+    }>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   },
+
   login: async (payload: LoginPayload) => {
     await getCsrfCookie();
-    return request<{ data: AuthUser }>('/auth/login', { method: 'POST', body: JSON.stringify(payload) });
+    return request<{ data: AuthUser }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   },
-  logout: () => request('/auth/logout', { method: 'POST' }),
-  me: () => request<{ data: AuthUser }>('/auth/me'),
+
+  verifyOtp: async (email: string, code: string) => {
+    await getCsrfCookie();
+
+    return request<{ data: AuthUser }>('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    });
+  },
+
+  resendOtp: (email: string) =>
+    request<{ message: string }>('/auth/resend-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  logout: () =>
+    request('/auth/logout', { method: 'POST' }),
+
+  me: () =>
+    request<{ data: AuthUser }>('/auth/me'),
 
   // --- Client Portal (authenticated) ---
-  getInvoices: () => request<{ data: Invoice[] }>('/portal/invoices'),
-  getInvoice: (id: number) => request<{ data: Invoice }>(`/portal/invoices/${id}`),
-  getPortalQuotations: () => request<{ data: PortalQuotation[] }>('/portal/quotations'),
-  getPortalQuotation: (id: number) => request<{ data: PortalQuotation }>(`/portal/quotations/${id}`),
+  getInvoices: () =>
+    request<{ data: Invoice[] }>('/portal/invoices'),
+
+  getInvoice: (id: number) =>
+    request<{ data: Invoice }>(`/portal/invoices/${id}`),
+
+  getPortalQuotations: () =>
+    request<{ data: PortalQuotation[] }>('/portal/quotations'),
+
+  getPortalQuotation: (id: number) =>
+    request<{ data: PortalQuotation }>(`/portal/quotations/${id}`),
+
   respondToQuotation: (id: number, decision: 'accepted' | 'declined') =>
     request<{ data: PortalQuotation }>(`/portal/quotations/${id}/respond`, {
       method: 'POST',
       body: JSON.stringify({ decision }),
     }),
-  getContracts: () => request<{ data: Contract[] }>('/portal/contracts'),
-  getContract: (id: number) => request<{ data: Contract }>(`/portal/contracts/${id}`),
+
+  getContracts: () =>
+    request<{ data: Contract[] }>('/portal/contracts'),
+
+  getContract: (id: number) =>
+    request<{ data: Contract }>(`/portal/contracts/${id}`),
 
   payInvoice: (invoiceId: number) =>
-    request<{ data: { payment_link: string; tx_ref: string } }>(`/portal/invoices/${invoiceId}/pay`, {
-      method: 'POST',
-    }),
+    request<{ data: { payment_link: string; tx_ref: string } }>(
+      `/portal/invoices/${invoiceId}/pay`,
+      {
+        method: 'POST',
+      }
+    ),
+
   verifyPayment: (txRef: string) =>
     request<{ data: Transaction }>('/portal/payments/verify', {
       method: 'POST',
       body: JSON.stringify({ tx_ref: txRef }),
     }),
-  getTransactions: () => request<{ data: Transaction[] }>('/portal/transactions'),
-  getTransaction: (id: number) => request<{ data: Transaction }>(`/portal/transactions/${id}`),
+
+  getTransactions: () =>
+    request<{ data: Transaction[] }>('/portal/transactions'),
+
+  getTransaction: (id: number) =>
+    request<{ data: Transaction }>(`/portal/transactions/${id}`),
 
   searchDomains: (query: string) =>
-    request<{ data: DomainSearchResult[] }>(`/domains/search?query=${encodeURIComponent(query)}`),
-  getDomainOrders: () => request<{ data: DomainOrder[] }>('/portal/domains'),
+    request<{ data: DomainSearchResult[] }>(
+      `/domains/search?query=${encodeURIComponent(query)}`
+    ),
+
+  getDomainOrders: () =>
+    request<{ data: DomainOrder[] }>('/portal/domains'),
+
   createDomainOrder: (payload: CreateDomainOrderPayload) =>
-    request<{ data: { payment_link: string; tx_ref: string; order: DomainOrder } }>('/portal/domains', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
+    request<{ data: { payment_link: string; tx_ref: string; order: DomainOrder } }>(
+      '/portal/domains',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
+    ),
+
   verifyDomainPayment: (txRef: string) =>
-    request<{ data: { transaction: Transaction; order: DomainOrder | null } }>('/portal/domains/verify', {
-      method: 'POST',
-      body: JSON.stringify({ tx_ref: txRef }),
-    }),
+    request<{ data: { transaction: Transaction; order: DomainOrder | null } }>(
+      '/portal/domains/verify',
+      {
+        method: 'POST',
+        body: JSON.stringify({ tx_ref: txRef }),
+      }
+    ),
+
+  payDomainOrder: (orderId: number) =>
+    request<{ data: { payment_link: string; tx_ref: string; order: DomainOrder } }>(
+      `/portal/domains/${orderId}/pay`,
+      {
+        method: 'POST',
+      }
+    ),
 };

@@ -11,6 +11,7 @@ const ADMIN_NAV = [
   { href: '/admin/contracts', label: 'Contracts' },
   { href: '/admin/domains', label: 'Domains' },
   { href: '/admin/transactions', label: 'Transactions' },
+  { href: '/admin/contacts', label: 'Contact Messages' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

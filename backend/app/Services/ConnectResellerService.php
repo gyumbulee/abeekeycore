@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -43,8 +44,10 @@ class ConnectResellerService
 
     /**
      * Check availability for multiple full domains (e.g. ['abeekey.com',
-     * 'abeekey.com.ng']) in a single request via ConnectReseller's
-     * bulkDomainCheck endpoint (max 200 domains per call).
+     * 'abeekey.com.ng']) via ConnectReseller's bulkDomainCheck endpoint.
+     * Automatically chunks into batches of 200 (their documented max per
+     * call) — with hundreds of TLDs now supported, a single keyword search
+     * can exceed that in one go.
      *
      * @return array<string, bool|null> keyed by full domain, true/false/null (null = couldn't determine)
      */
@@ -54,6 +57,17 @@ class ConnectResellerService
             return [];
         }
 
+        $availability = [];
+
+        foreach (array_chunk($fullDomains, 200) as $chunk) {
+            $availability = [...$availability, ...$this->checkAvailabilityChunk($chunk)];
+        }
+
+        return $availability;
+    }
+
+    protected function checkAvailabilityChunk(array $fullDomains): array
+    {
         try {
             $result = $this->get('bulkDomainCheck', [
                 'websiteNames' => implode(',', $fullDomains),
@@ -88,6 +102,70 @@ class ConnectResellerService
 
             return array_fill_keys($fullDomains, null);
         }
+    }
+
+    /**
+     * Markup multiplier for a given TLD — checks for a per-TLD override in
+     * config('domains.tld_markup_overrides'), falling back to the global
+     * config('domains.markup_percent'). Returns e.g. 1.3 for a 30% markup.
+     */
+    public function markupMultiplier(string $tld): float
+    {
+        $overrides = config('domains.tld_markup_overrides', []);
+        $percent = $overrides[$tld] ?? config('domains.markup_percent', 30);
+
+        return 1 + ((float) $percent / 100);
+    }
+    /**
+     * Get all TLD prices, cached (see config('domains.tld_cache_hours')) since this list
+     * is large and changes rarely. Keys are normalised to always have a
+     * leading dot (e.g. '.com').
+     *
+     * @return array<string, array{cost: float, renewal: float, transfer: float, currency: string, minPeriod: int, maxPeriod: int}>
+     */
+    public function getAllTldPrices(): array
+    {
+        return Cache::remember('connectreseller_all_tld_prices', now()->addHours((int) config('domains.tld_cache_hours', 12)), function () {
+            try {
+                $result = $this->get('tldsync');
+                $records = $result['body']['responseData'] ?? $result['body'] ?? [];
+
+                if (! is_array($records) || empty($records)) {
+                    Log::warning('ConnectReseller tldsync returned no usable TLD data', $result);
+
+                    return [];
+                }
+
+                // Handle both a single object and an array of objects, just in case.
+                if (isset($records['tld'])) {
+                    $records = [$records];
+                }
+
+                $catalog = [];
+                foreach ($records as $r) {
+                    $tld = $r['tld'] ?? null;
+                    if (! $tld) {
+                        continue;
+                    }
+                    $tld = str_starts_with($tld, '.') ? $tld : '.'.$tld;
+
+                    $catalog[$tld] = [
+                        'cost' => (float) ($r['registrationPrice'] ?? 0),
+                        'renewal' => (float) ($r['renewalPrice'] ?? 0),
+                        'transfer' => (float) ($r['transferPrice'] ?? 0),
+                        'currency' => $r['currencyCode'] ?? config('domains.default_currency', 'NGN'),
+                        'minPeriod' => (int) ($r['minPeriod'] ?? 1),
+                        'maxPeriod' => (int) ($r['maxPeriod'] ?? 10),
+                    ];
+                }
+
+                return $catalog;
+            } catch (\Throwable $e) {
+                Log::error('ConnectReseller tldsync failed: '.$e->getMessage());
+
+                return [];
+            }
+        });
     }
 
     /**

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\ClientController as AdminClientController;
+use App\Http\Controllers\Admin\ContactController as AdminContactController;
 use App\Http\Controllers\Admin\ContractController as AdminContractController;
 use App\Http\Controllers\Admin\DomainController as AdminDomainController;
 use App\Http\Controllers\Admin\InvoiceController as AdminInvoiceController;
@@ -60,6 +61,8 @@ Route::post('/webhooks/flutterwave', [WebhookController::class, 'flutterwave']);
 
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp']);
+Route::post('/auth/resend-otp', [AuthController::class, 'resendOtp']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
@@ -67,7 +70,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     /*
     |----------------------------------------------------------------------
-    | Client Portal Routes
+    | Client Portal Routes (Phase 2 — to be filled in next)
     |----------------------------------------------------------------------
     */
     Route::prefix('portal')->group(function () {
@@ -90,6 +93,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/domains', [PortalDomainController::class, 'index']);
         Route::post('/domains', [PortalDomainController::class, 'store']);
         Route::post('/domains/verify', [PortalDomainController::class, 'verify']);
+        Route::post('/domains/{id}/pay', [PortalDomainController::class, 'pay']);
     });
 
     /*
@@ -113,5 +117,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/transactions', [AdminTransactionController::class, 'index']);
 
         Route::get('/domains', [AdminDomainController::class, 'index']);
+
+        Route::get('/contacts', [AdminContactController::class, 'index']);
+        Route::get('/contacts/{id}', [AdminContactController::class, 'show']);
+        Route::post('/contacts/{id}/reply', [AdminContactController::class, 'reply']);
     });
 });

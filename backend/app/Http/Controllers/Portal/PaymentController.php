@@ -64,9 +64,11 @@ class PaymentController extends Controller
             ], 502);
         }
 
+        $paymentData = is_array($response['data'] ?? null) ? $response['data'] : [];
+
         return response()->json([
             'data' => [
-                'payment_link' => $response['data']['link'] ?? null,
+                'payment_link' => $paymentData['link'] ?? null,
                 'tx_ref' => $txRef,
             ],
         ]);

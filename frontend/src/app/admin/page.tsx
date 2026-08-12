@@ -6,7 +6,7 @@ export default function AdminDashboard() {
       <h1 className="font-heading font-bold text-navy-primary text-2xl mb-2">Admin Dashboard</h1>
       <p className="text-text-soft mb-10">Manage leads, quotations, and client accounts.</p>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-6 gap-6">
         <Link
           href="/admin/leads"
           className="bg-white border border-slate-200 rounded-[20px] p-6 hover:border-blue-primary/40 hover:-translate-y-0.5 transition-all"
@@ -43,6 +43,13 @@ export default function AdminDashboard() {
         >
           <h3 className="font-heading font-semibold text-navy-primary mb-1">Transactions</h3>
           <p className="text-text-soft text-sm">View all client payments and receipts.</p>
+        </Link>
+        <Link
+          href="/admin/contacts"
+          className="bg-white border border-slate-200 rounded-[20px] p-6 hover:border-blue-primary/40 hover:-translate-y-0.5 transition-all"
+        >
+          <h3 className="font-heading font-semibold text-navy-primary mb-1">Contact Messages</h3>
+          <p className="text-text-soft text-sm">View and reply to website enquiries.</p>
         </Link>
       </div>
     </div>

@@ -7,6 +7,7 @@ const STATUS_STYLES: Record<string, string> = {
   won: 'bg-success/10 text-success',
   registered: 'bg-success/10 text-success',
   successful: 'bg-success/10 text-success',
+  replied: 'bg-success/10 text-success',
 
   sent: 'bg-blue-primary/10 text-blue-primary',
   quoted: 'bg-blue-primary/10 text-blue-primary',

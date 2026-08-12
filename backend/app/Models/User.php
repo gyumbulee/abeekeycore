@@ -60,4 +60,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(DomainOrder::class);
     }
+
+    public function otps(): HasMany
+    {
+        return $this->hasMany(EmailOtp::class);
+    }
 }
