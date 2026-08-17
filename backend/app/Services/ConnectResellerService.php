@@ -45,9 +45,11 @@ class ConnectResellerService
     /**
      * Check availability for multiple full domains (e.g. ['abeekey.com',
      * 'abeekey.com.ng']) via ConnectReseller's bulkDomainCheck endpoint.
-     * Automatically chunks into batches of 200 (their documented max per
-     * call) — with hundreds of TLDs now supported, a single keyword search
-     * can exceed that in one go.
+     * Chunks into batches of 40 — their docs say up to 200 per call, but in
+     * practice large batches consistently time out (checking many domains
+     * against many different TLD registries is genuinely slow on their
+     * end), so smaller batches with a longer per-batch timeout are more
+     * reliable than fewer, larger, timing-out requests.
      *
      * @return array<string, bool|null> keyed by full domain, true/false/null (null = couldn't determine)
      */
@@ -59,7 +61,7 @@ class ConnectResellerService
 
         $availability = [];
 
-        foreach (array_chunk($fullDomains, 200) as $chunk) {
+        foreach (array_chunk($fullDomains, 40) as $chunk) {
             $availability = [...$availability, ...$this->checkAvailabilityChunk($chunk)];
         }
 
@@ -69,14 +71,16 @@ class ConnectResellerService
     protected function checkAvailabilityChunk(array $fullDomains): array
     {
         try {
-            $result = $this->get('bulkDomainCheck', [
+            $result = Http::timeout(25)->connectTimeout(6)->get("{$this->baseUrl}/bulkDomainCheck", [
+                'APIKey' => $this->apiKey,
                 'websiteNames' => implode(',', $fullDomains),
             ]);
 
-            $records = $result['body']['responseData'] ?? [];
+            $body = $result->json() ?? [];
+            $records = $body['responseData'] ?? [];
 
             if (! is_array($records)) {
-                Log::warning('ConnectReseller bulkDomainCheck returned an unexpected shape', $result);
+                Log::warning('ConnectReseller bulkDomainCheck returned an unexpected shape', ['body' => $body]);
 
                 return array_fill_keys($fullDomains, null);
             }
@@ -117,7 +121,8 @@ class ConnectResellerService
         return 1 + ((float) $percent / 100);
     }
     /**
-     * Get all TLD prices, cached (see config('domains.tld_cache_hours')) since this list
+     * Fetch ALL TLDs ConnectReseller supports, with their registration
+     * price, cached (see config('domains.tld_cache_hours')) since this list
      * is large and changes rarely. Keys are normalised to always have a
      * leading dot (e.g. '.com').
      *
@@ -149,11 +154,16 @@ class ConnectResellerService
                     }
                     $tld = str_starts_with($tld, '.') ? $tld : '.'.$tld;
 
+                    $sourceCurrency = strtoupper($r['currencyCode'] ?? config('domains.default_currency', 'NGN'));
+                    $rate = $sourceCurrency === 'USD' ? (float) config('domains.usd_to_ngn_rate', 1600) : 1.0;
+
                     $catalog[$tld] = [
-                        'cost' => (float) ($r['registrationPrice'] ?? 0),
-                        'renewal' => (float) ($r['renewalPrice'] ?? 0),
-                        'transfer' => (float) ($r['transferPrice'] ?? 0),
-                        'currency' => $r['currencyCode'] ?? config('domains.default_currency', 'NGN'),
+                        'cost' => round((float) ($r['registrationPrice'] ?? 0) * $rate, 2),
+                        'renewal' => round((float) ($r['renewalPrice'] ?? 0) * $rate, 2),
+                        'transfer' => round((float) ($r['transferPrice'] ?? 0) * $rate, 2),
+                        // Always NGN after normalization above — everything else on
+                        // the platform (invoices, quotations, Flutterwave) is NGN.
+                        'currency' => 'NGN',
                         'minPeriod' => (int) ($r['minPeriod'] ?? 1),
                         'maxPeriod' => (int) ($r['maxPeriod'] ?? 10),
                     ];
