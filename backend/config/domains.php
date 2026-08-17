@@ -61,10 +61,57 @@ return [
     */
     'search_tld_limit' => (int) env('DOMAIN_SEARCH_TLD_LIMIT', 60),
 
-    'priority_tlds' => [
-        '.com', '.com.ng', '.ng', '.net', '.org', '.info', '.biz', '.co',
-        '.io', '.app', '.dev', '.xyz', '.online', '.store', '.site', '.tech',
-        '.shop', '.club', '.me', '.tv', '.cc', '.name', '.mobi', '.pro',
-        '.us', '.uk', '.ca', '.agency', '.company', '.digital', '.email',
-    ],
+'priority_tlds' => [
+    '.com',
+    '.net',
+    '.org',
+    '.info',
+    '.biz',
+    '.co',
+
+    '.com.ng',
+    '.ng',
+    '.org.ng',
+    '.net.ng',
+
+    '.io',
+    '.ai',
+    '.app',
+    '.dev',
+    '.tech',
+    '.xyz',
+    '.cloud',
+
+    '.online',
+    '.site',
+    '.website',
+    '.store',
+    '.shop',
+    '.blog',
+
+    '.company',
+    '.business',
+    '.agency',
+    '.digital',
+    '.services',
+    '.solutions',
+
+    '.me',
+    '.tv',
+    '.cc',
+    '.pro',
+    '.name',
+    '.mobi',
+    '.club',
+    '.live',
+    '.space',
+    '.world',
+
+    '.uk',
+    '.co.uk',
+    '.us',
+    '.ca',
+    '.de',
+    '.in',
+],
 ];

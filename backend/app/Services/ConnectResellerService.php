@@ -129,54 +129,125 @@ class ConnectResellerService
      * @return array<string, array{cost: float, renewal: float, transfer: float, currency: string, minPeriod: int, maxPeriod: int}>
      */
     public function getAllTldPrices(): array
-    {
-        return Cache::remember('connectreseller_all_tld_prices', now()->addHours((int) config('domains.tld_cache_hours', 12)), function () {
+{
+    return Cache::remember(
+        'connectreseller_all_tld_prices',
+        now()->addHours((int) config('domains.tld_cache_hours', 12)),
+        function () {
             try {
                 $result = $this->get('tldsync');
-                $records = $result['body']['responseData'] ?? $result['body'] ?? [];
+                $records = $result['body']['responseData']
+                    ?? $result['body']
+                    ?? [];
 
                 if (! is_array($records) || empty($records)) {
-                    Log::warning('ConnectReseller tldsync returned no usable TLD data', $result);
+                    Log::warning(
+                        'ConnectReseller tldsync returned no usable TLD data',
+                        $result
+                    );
 
                     return [];
                 }
 
-                // Handle both a single object and an array of objects, just in case.
+                // Handle both a single object and an array of objects.
                 if (isset($records['tld'])) {
                     $records = [$records];
                 }
 
                 $catalog = [];
+
                 foreach ($records as $r) {
                     $tld = $r['tld'] ?? null;
+
                     if (! $tld) {
                         continue;
                     }
-                    $tld = str_starts_with($tld, '.') ? $tld : '.'.$tld;
 
-                    $sourceCurrency = strtoupper($r['currencyCode'] ?? config('domains.default_currency', 'NGN'));
-                    $rate = $sourceCurrency === 'USD' ? (float) config('domains.usd_to_ngn_rate', 1600) : 1.0;
+                    // Always normalize TLDs to include a leading dot.
+                    $tld = str_starts_with($tld, '.')
+                        ? strtolower($tld)
+                        : '.'.strtolower($tld);
+
+                    $sourceCurrency = strtoupper(
+                        $r['currencyCode']
+                        ?? config('domains.default_currency', 'NGN')
+                    );
+
+                    $rate = $sourceCurrency === 'USD'
+                        ? (float) config('domains.usd_to_ngn_rate', 1600)
+                        : 1.0;
 
                     $catalog[$tld] = [
-                        'cost' => round((float) ($r['registrationPrice'] ?? 0) * $rate, 2),
-                        'renewal' => round((float) ($r['renewalPrice'] ?? 0) * $rate, 2),
-                        'transfer' => round((float) ($r['transferPrice'] ?? 0) * $rate, 2),
-                        // Always NGN after normalization above — everything else on
-                        // the platform (invoices, quotations, Flutterwave) is NGN.
+                        'cost' => round(
+                            (float) ($r['registrationPrice'] ?? 0) * $rate,
+                            2
+                        ),
+
+                        'renewal' => round(
+                            (float) ($r['renewalPrice'] ?? 0) * $rate,
+                            2
+                        ),
+
+                        'transfer' => round(
+                            (float) ($r['transferPrice'] ?? 0) * $rate,
+                            2
+                        ),
+
                         'currency' => 'NGN',
+
                         'minPeriod' => (int) ($r['minPeriod'] ?? 1),
+
                         'maxPeriod' => (int) ($r['maxPeriod'] ?? 10),
                     ];
                 }
 
-                return $catalog;
+                /*
+                |--------------------------------------------------------------------------
+                | Order TLDs
+                |--------------------------------------------------------------------------
+                |
+                | First: TLDs defined in domains.priority_tlds, in the exact
+                | order specified in the config file.
+                |
+                | Second: Every remaining TLD alphabetically.
+                |
+                */
+
+                $priorityTlds = config('domains.priority_tlds', []);
+
+                $orderedCatalog = [];
+
+                // Add popular TLDs first, preserving the exact config order.
+                foreach ($priorityTlds as $tld) {
+                    $tld = str_starts_with($tld, '.')
+                        ? strtolower($tld)
+                        : '.'.strtolower($tld);
+
+                    if (isset($catalog[$tld])) {
+                        $orderedCatalog[$tld] = $catalog[$tld];
+                        unset($catalog[$tld]);
+                    }
+                }
+
+                // Sort all remaining TLDs alphabetically.
+                ksort($catalog);
+
+                // Add remaining TLDs after priority TLDs.
+                return [
+                    ...$orderedCatalog,
+                    ...$catalog,
+                ];
+
             } catch (\Throwable $e) {
-                Log::error('ConnectReseller tldsync failed: '.$e->getMessage());
+                Log::error(
+                    'ConnectReseller tldsync failed: '.$e->getMessage()
+                );
 
                 return [];
             }
-        });
-    }
+        }
+    );
+}
 
     /**
      * Add a registrant contact, returning its ConnectReseller contact ID.
