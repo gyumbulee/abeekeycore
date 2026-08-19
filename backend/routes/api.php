@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/services', [ServiceController::class, 'index']);
 
-Route::post('/contact', [ContactController::class, 'store']);
+Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,10'); // 5 submissions per 10 minutes per IP
 
 Route::post('/quotation-requests', [QuotationController::class, 'store']);
 

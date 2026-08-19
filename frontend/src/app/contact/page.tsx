@@ -11,8 +11,25 @@ declare global {
   }
 }
 
+// Curated list, Nigeria first since it's the primary market.
+const COUNTRY_CODES = [
+  { code: '+234', label: '🇳🇬 Nigeria (+234)' },
+  { code: '+1', label: '🇺🇸 US/Canada (+1)' },
+  { code: '+44', label: '🇬🇧 UK (+44)' },
+  { code: '+233', label: '🇬🇭 Ghana (+233)' },
+  { code: '+254', label: '🇰🇪 Kenya (+254)' },
+  { code: '+27', label: '🇿🇦 South Africa (+27)' },
+  { code: '+91', label: '🇮🇳 India (+91)' },
+  { code: '+971', label: '🇦🇪 UAE (+971)' },
+  { code: '+61', label: '🇦🇺 Australia (+61)' },
+  { code: '+49', label: '🇩🇪 Germany (+49)' },
+  { code: '+33', label: '🇫🇷 France (+33)' },
+  { code: '+86', label: '🇨🇳 China (+86)' },
+];
+
 export default function ContactPage() {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', subject: '', message: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', subject: '', message: '', hp_field_9x2: '' });
+  const [dialCode, setDialCode] = useState('+234');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -22,7 +39,7 @@ export default function ContactPage() {
   setErrorMsg('');
 
   try {
-    await api.submitContact(form);
+    await api.submitContact({ ...form, phone: `${dialCode} ${form.phone}`.trim() });
 
     if (typeof window !== 'undefined' && window.fbq) {
       window.fbq('track', 'Lead');
@@ -36,7 +53,9 @@ export default function ContactPage() {
       company: '',
       subject: '',
       message: '',
+      hp_field_9x2: '',
     });
+    setDialCode('+234');
   } catch (err) {
     setStatus('error');
     setErrorMsg(err instanceof Error ? err.message : 'Something went wrong.');
@@ -59,10 +78,25 @@ export default function ContactPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Honeypot — hidden from real users, bots that auto-fill every field will trip it.
+                Field name deliberately avoids "website"/"url"/"company" etc. so browser
+                autofill (Chrome/Safari saved-address data) doesn't populate it and false-flag
+                real users. */}
+            <input
+              type="text"
+              name="hp_field_9x2"
+              id="hp_field_9x2"
+              value={form.hp_field_9x2}
+              onChange={(e) => setForm({ ...form, hp_field_9x2: e.target.value })}
+              tabIndex={-1}
+              autoComplete="new-password"
+              aria-hidden="true"
+              className="absolute -left-[9999px] w-px h-px opacity-0"
+            />
             <div className="grid sm:grid-cols-2 gap-5">
               <input
                 required
-                placeholder="Full name"
+                placeholder="Full name (first & last)"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent"
@@ -77,12 +111,28 @@ export default function ContactPage() {
               />
             </div>
             <div className="grid sm:grid-cols-2 gap-5">
-              <input
-                placeholder="Phone (optional)"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent"
-              />
+              <div className="flex gap-2">
+                <select
+                  value={dialCode}
+                  onChange={(e) => setDialCode(e.target.value)}
+                  aria-label="Country code"
+                  className="border border-slate-300 rounded-sm px-2 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent bg-white shrink-0 w-[110px]"
+                >
+                  {COUNTRY_CODES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  required
+                  type="tel"
+                  placeholder="Phone number"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent"
+                />
+              </div>
               <input
                 placeholder="Company (optional)"
                 value={form.company}
@@ -91,15 +141,17 @@ export default function ContactPage() {
               />
             </div>
             <input
-              placeholder="Subject (optional)"
+              required
+              placeholder="Subject"
               value={form.subject}
               onChange={(e) => setForm({ ...form, subject: e.target.value })}
               className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent"
             />
             <textarea
               required
+              minLength={15}
               rows={5}
-              placeholder="Tell us about your project..."
+              placeholder="Tell us about your project... (min. 15 characters)"
               value={form.message}
               onChange={(e) => setForm({ ...form, message: e.target.value })}
               className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent"

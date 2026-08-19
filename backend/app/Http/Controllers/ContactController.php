@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreContactRequest;
 use App\Mail\ContactMessageReceived;
+use App\Mail\ContactSubmissionConfirmation;
 use App\Models\ContactMessage;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -14,15 +15,10 @@ class ContactController extends Controller
     /**
      * Store a new contact form submission and notify the Abeekey team.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreContactRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'email' => ['required', 'email', 'max:150'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'company' => ['nullable', 'string', 'max:150'],
-            'subject' => ['nullable', 'string', 'max:150'],
-            'message' => ['required', 'string', 'max:5000'],
+        $validated = $request->safe()->only([
+            'name', 'email', 'phone', 'company', 'subject', 'message',
         ]);
 
         $contact = ContactMessage::create($validated);
@@ -38,6 +34,16 @@ class ContactController extends Controller
                 ->send(new ContactMessageReceived($contact));
         } catch (\Throwable $e) {
             Log::error('Failed to send contact notification email: '.$e->getMessage());
+        }
+
+        // Confirmation to the person who submitted the form — kept in its own
+        // try/catch so a failure here never affects the team notification above
+        // or turns a successful submission into a 500 error.
+        try {
+            Mail::to($contact->email)
+                ->send(new ContactSubmissionConfirmation($contact));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send contact confirmation email: '.$e->getMessage());
         }
 
         return response()->json([
