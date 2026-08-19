@@ -67,6 +67,7 @@ export interface QuotationPayload {
   service_interest: string;
   project_summary: string;
   budget_range?: string;
+  hp_field_9x2?: string;
 }
 
 export interface TrainingCourse {
@@ -90,6 +91,7 @@ export interface TrainingApplicationPayload {
   delivery_mode?: string;
   preferred_batch?: string;
   notes?: string;
+  hp_field_9x2?: string;
 }
 
 export interface AuthUser {

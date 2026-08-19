@@ -220,6 +220,7 @@ const emptyForm: TrainingApplicationPayload = {
   delivery_mode: '',
   preferred_batch: '',
   notes: '',
+  hp_field_9x2: '',
 };
 
 export default function TrainingPage() {
@@ -286,7 +287,7 @@ export default function TrainingPage() {
     try {
       await api.submitTrainingApplication(form);
       setStatus('sent');
-      setForm(emptyForm);
+      setForm({ ...emptyForm });
       setSelectedCourse('');
     } catch (error) {
       setStatus('error');
@@ -581,6 +582,20 @@ export default function TrainingPage() {
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-5">
+                    {/* Honeypot — hidden from real users, bots that auto-fill every field will trip it.
+                        Field name deliberately avoids "website"/"url"/"company" etc. so browser
+                        autofill doesn't populate it and false-flag real users. */}
+                    <input
+                      type="text"
+                      name="hp_field_9x2"
+                      id="hp_field_9x2"
+                      value={form.hp_field_9x2}
+                      onChange={(e) => setForm({ ...form, hp_field_9x2: e.target.value })}
+                      tabIndex={-1}
+                      autoComplete="new-password"
+                      aria-hidden="true"
+                      className="absolute -left-[9999px] w-px h-px opacity-0"
+                    />
                     <div className="grid sm:grid-cols-2 gap-5">
                       <Field
                         label="Full name"

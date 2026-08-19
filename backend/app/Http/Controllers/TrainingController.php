@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreTrainingApplicationRequest;
 use App\Models\TrainingApplication;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class TrainingController extends Controller
 {
@@ -187,19 +187,12 @@ class TrainingController extends Controller
     /**
      * Store a new training enquiry/application.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreTrainingApplicationRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'full_name' => ['required', 'string', 'max:120'],
-            'email' => ['required', 'email', 'max:150'],
-            'phone' => ['required', 'string', 'max:30'],
-            'course' => ['required', 'string', 'max:150'],
-            'learning_goal' => ['nullable', 'string', 'max:2000'],
-            'experience_level' => ['nullable', 'string', 'max:50'],
-            'preferred_schedule' => ['nullable', 'string', 'max:100'],
-            'delivery_mode' => ['nullable', 'string', 'max:50'],
-            'preferred_batch' => ['nullable', 'string', 'max:100'],
-            'notes' => ['nullable', 'string', 'max:2000'],
+        $validated = $request->safe()->only([
+            'full_name', 'email', 'phone', 'course', 'learning_goal',
+            'experience_level', 'preferred_schedule', 'delivery_mode',
+            'preferred_batch', 'notes',
         ]);
 
         $validated['payment_status'] = 'pending';

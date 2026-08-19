@@ -2,25 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreQuotationRequest;
 use App\Models\QuotationRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class QuotationController extends Controller
 {
     /**
      * Store a new quotation/project request from a prospective client.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreQuotationRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'client_name' => ['required', 'string', 'max:120'],
-            'company_name' => ['nullable', 'string', 'max:150'],
-            'email' => ['required', 'email', 'max:150'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'service_interest' => ['required', 'string', 'max:150'],
-            'project_summary' => ['required', 'string', 'max:5000'],
-            'budget_range' => ['nullable', 'string', 'max:80'],
+        $validated = $request->safe()->only([
+            'client_name', 'company_name', 'email', 'phone',
+            'service_interest', 'project_summary', 'budget_range',
         ]);
 
         $validated['status'] = 'new';

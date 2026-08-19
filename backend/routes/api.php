@@ -34,12 +34,12 @@ Route::get('/services', [ServiceController::class, 'index']);
 
 Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,10'); // 5 submissions per 10 minutes per IP
 
-Route::post('/quotation-requests', [QuotationController::class, 'store']);
+Route::post('/quotation-requests', [QuotationController::class, 'store'])->middleware('throttle:5,10'); // 5 submissions per 10 minutes per IP
 
-Route::post('/training/applications', [TrainingController::class, 'store']);
+Route::post('/training/applications', [TrainingController::class, 'store'])->middleware('throttle:5,10'); // 5 submissions per 10 minutes per IP
 Route::get('/training/courses', [TrainingController::class, 'courses']);
 
-Route::get('/domains/search', [DomainController::class, 'search']);
+Route::get('/domains/search', [DomainController::class, 'search'])->middleware('throttle:15,5'); // 15 searches per 5 minutes per IP — each search fans out to several ConnectReseller API calls
 
 /*
 |--------------------------------------------------------------------------

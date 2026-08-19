@@ -2,11 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\HasSpamHeuristics;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
 class StoreContactRequest extends FormRequest
 {
+    use HasSpamHeuristics;
+
     public function authorize(): bool
     {
         return true;
@@ -49,7 +52,7 @@ class StoreContactRequest extends FormRequest
             // Honeypot — must stay empty. Real visitors never see or fill this field;
             // only bots that auto-fill every input will. Named deliberately unlike
             // "website"/"url"/"company" so browser autofill won't populate it too.
-            'hp_field_9x2' => ['prohibited'],
+            'hp_field_9x2' => $this->honeypotRule(),
         ];
     }
 
@@ -66,18 +69,6 @@ class StoreContactRequest extends FormRequest
     }
 
     /**
-     * A word is treated as gibberish if it's long enough to judge (5+ letters)
-     * but contains no vowel at all — e.g. "asdfgh", "qwerty", "xzcvbn".
-     * Real words of that length virtually always contain a vowel.
-     */
-    protected function isGibberishWord(string $word): bool
-    {
-        $letters = preg_replace('/[^\pL]/u', '', $word);
-
-        return mb_strlen($letters) >= 5 && !preg_match('/[aeiouAEIOU]/u', $letters);
-    }
-
-    /**
      * Extra spam heuristics that a simple rule list can't express cleanly.
      */
     public function withValidator(Validator $validator): void
@@ -87,18 +78,14 @@ class StoreContactRequest extends FormRequest
             $name = (string) $this->input('name');
             $subject = (string) $this->input('subject');
 
-            // More than 2 links in a message from a first-time enquiry is almost
-            // always spam/SEO-bot content, not a genuine project enquiry.
-            if (preg_match_all('/https?:\/\/|www\./i', $message) > 2) {
+            if ($this->hasExcessiveLinks($message)) {
                 $validator->errors()->add('message', 'Your message looks like it may be spam. Please remove links and try again.');
             }
 
-            // Same character repeated 8+ times in a row ("aaaaaaaa...") is a
-            // near-universal spam/bot signature.
-            if (preg_match('/(.)\1{7,}/', $message)) {
+            if ($this->hasRepeatedCharacterSpam($message)) {
                 $validator->errors()->add('message', 'Please enter a valid message.');
             }
-            if (preg_match('/(.)\1{7,}/', $subject)) {
+            if ($this->hasRepeatedCharacterSpam($subject)) {
                 $validator->errors()->add('subject', 'Please enter a valid subject.');
             }
 
@@ -111,8 +98,8 @@ class StoreContactRequest extends FormRequest
                 }
             }
 
-            // Gibberish subject check: same rule — one bad word is enough since
-            // subjects are short and every word should be meaningful.
+            // Gibberish subject check: one bad word is enough since subjects
+            // are short and every word should be meaningful.
             foreach (preg_split('/\s+/', trim($subject)) as $word) {
                 if ($this->isGibberishWord($word)) {
                     $validator->errors()->add('subject', 'Please enter a real subject for your enquiry.');
@@ -120,16 +107,8 @@ class StoreContactRequest extends FormRequest
                 }
             }
 
-            // Gibberish message check: a handful of nonsense words scattered in an
-            // otherwise real message shouldn't block it, so this only fires when a
-            // meaningful share of the longer words are vowel-less nonsense.
-            $words = preg_split('/\s+/', trim($message));
-            $checkable = array_filter($words, fn ($w) => mb_strlen(preg_replace('/[^\pL]/u', '', $w)) >= 4);
-            if (count($checkable) >= 3) {
-                $gibberishCount = count(array_filter($checkable, fn ($w) => $this->isGibberishWord($w)));
-                if ($gibberishCount / count($checkable) > 0.4) {
-                    $validator->errors()->add('message', 'Your message appears to contain gibberish. Please rewrite it clearly.');
-                }
+            if ($this->isGibberishText($message)) {
+                $validator->errors()->add('message', 'Your message appears to contain gibberish. Please rewrite it clearly.');
             }
 
             // Reject messages that are just the name pasted in, or vice versa —
