@@ -98,7 +98,19 @@ export interface AuthUser {
   id: number;
   name: string;
   email: string;
+  phone: string | null;
   role: 'client' | 'staff' | 'admin';
+}
+
+export interface UpdateProfilePayload {
+  name: string;
+  phone?: string;
+}
+
+export interface UpdatePasswordPayload {
+  current_password: string;
+  password: string;
+  password_confirmation: string;
 }
 
 export interface RegisterPayload {
@@ -253,6 +265,13 @@ export interface ClientAccount {
   email: string;
 }
 
+export interface ClientAccountDetailed extends ClientAccount {
+  created_at: string;
+  invoices_count: number;
+  quotations_count: number;
+  contracts_count: number;
+}
+
 export interface CreateInvoicePayload {
   user_id: number;
   issue_date: string;
@@ -271,6 +290,25 @@ export interface CreateContractPayload {
   end_date?: string;
 }
 
+export interface CreateQuotationPayload {
+  user_id: number;
+  title: string;
+  amount_total: number;
+  currency?: string;
+  valid_until?: string;
+  items: LineItem[];
+}
+
+export interface UpdateQuotationStatusPayload {
+  status: PortalQuotation['status'];
+}
+
+export interface MarkInvoicePaidPayload {
+  payment_method: string;
+  reference?: string;
+  note?: string;
+}
+
 export const adminApi = {
   getLeads: (status?: string) =>
     request<{ data: Lead[] }>(`/admin/leads${status ? `?status=${status}` : ''}`),
@@ -285,7 +323,7 @@ export const adminApi = {
     }),
 
   getClients: () =>
-    request<{ data: ClientAccount[] }>('/admin/clients'),
+    request<{ data: ClientAccountDetailed[] }>('/admin/clients'),
 
   getInvoices: () =>
     request<{ data: (Invoice & { user: ClientAccount })[] }>('/admin/invoices'),
@@ -293,6 +331,27 @@ export const adminApi = {
   createInvoice: (payload: CreateInvoicePayload) =>
     request<{ data: Invoice & { user: ClientAccount } }>('/admin/invoices', {
       method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  markInvoicePaid: (id: number, payload: MarkInvoicePaidPayload) =>
+    request<{ data: Invoice & { user: ClientAccount } }>(`/admin/invoices/${id}/mark-paid`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getQuotations: () =>
+    request<{ data: (PortalQuotation & { user: ClientAccount })[] }>('/admin/quotations'),
+
+  createQuotation: (payload: CreateQuotationPayload) =>
+    request<{ data: PortalQuotation & { user: ClientAccount } }>('/admin/quotations', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  updateQuotationStatus: (id: number, payload: UpdateQuotationStatusPayload) =>
+    request<{ data: PortalQuotation & { user: ClientAccount } }>(`/admin/quotations/${id}`, {
+      method: 'PATCH',
       body: JSON.stringify(payload),
     }),
 
@@ -321,7 +380,52 @@ export const adminApi = {
       method: 'POST',
       body: JSON.stringify({ reply }),
     }),
+
+  getAdminSupportTickets: (status?: string) =>
+    request<{ data: (SupportTicket & { user: ClientAccount })[] }>(
+      `/admin/support-tickets${status ? `?status=${status}` : ''}`
+    ),
+
+  getAdminSupportTicket: (id: number) =>
+    request<{ data: SupportTicket & { user: ClientAccount } }>(`/admin/support-tickets/${id}`),
+
+  replyToSupportTicket: (id: number, message: string, status?: SupportTicket['status']) =>
+    request<{ data: SupportTicketMessage }>(`/admin/support-tickets/${id}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ message, status }),
+    }),
+
+  updateSupportTicket: (id: number, payload: { status?: SupportTicket['status']; priority?: SupportTicket['priority'] }) =>
+    request<{ data: SupportTicket & { user: ClientAccount } }>(`/admin/support-tickets/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
 };
+
+export interface SupportTicketMessage {
+  id: number;
+  message: string;
+  is_staff: boolean;
+  user?: { id: number; name: string; role: string };
+  created_at: string;
+}
+
+export interface SupportTicket {
+  id: number;
+  ticket_number: string;
+  subject: string;
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  priority: 'low' | 'normal' | 'high';
+  last_message_at: string | null;
+  created_at: string;
+  messages?: SupportTicketMessage[];
+}
+
+export interface CreateSupportTicketPayload {
+  subject: string;
+  message: string;
+  priority?: SupportTicket['priority'];
+}
 
 export const api = {
   getServices: () =>
@@ -394,6 +498,36 @@ export const api = {
     request<{ data: AuthUser }>('/auth/me'),
 
   // --- Client Portal (authenticated) ---
+  updateProfile: (payload: UpdateProfilePayload) =>
+    request<{ data: AuthUser }>('/portal/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  updatePassword: (payload: UpdatePasswordPayload) =>
+    request<{ message: string }>('/portal/profile/password', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  getSupportTickets: () =>
+    request<{ data: SupportTicket[] }>('/portal/support-tickets'),
+
+  getSupportTicket: (id: number) =>
+    request<{ data: SupportTicket }>(`/portal/support-tickets/${id}`),
+
+  createSupportTicket: (payload: CreateSupportTicketPayload) =>
+    request<{ data: SupportTicket }>('/portal/support-tickets', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  addSupportTicketMessage: (id: number, message: string) =>
+    request<{ data: SupportTicketMessage }>(`/portal/support-tickets/${id}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }),
+
   getInvoices: () =>
     request<{ data: Invoice[] }>('/portal/invoices'),
 

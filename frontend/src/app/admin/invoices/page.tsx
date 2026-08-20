@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { adminApi, ClientAccount, Invoice, LineItem } from '@/lib/api';
+import { adminApi, ClientAccount, Invoice, LineItem, MarkInvoicePaidPayload } from '@/lib/api';
 import StatusBadge from '@/components/StatusBadge';
 
 const emptyItem: LineItem = { description: '', quantity: 1, unit_price: 0 };
@@ -33,6 +33,10 @@ export default function AdminInvoicesPage() {
   }
 
   useEffect(reload, []);
+
+  function handleMarkedPaid(updated: Invoice & { user: ClientAccount }) {
+    setInvoices((prev) => prev.map((inv) => (inv.id === updated.id ? updated : inv)));
+  }
 
   return (
     <div>
@@ -82,11 +86,96 @@ export default function AdminInvoicesPage() {
                 {invoice.user?.name} ({invoice.user?.email}) · Due {formatDate(invoice.due_date)}
               </p>
             </div>
-            <div className="font-heading font-bold text-navy-primary text-lg">
-              {formatMoney(invoice.amount_total, invoice.currency)}
+            <div className="flex items-center gap-4">
+              <div className="font-heading font-bold text-navy-primary text-lg">
+                {formatMoney(invoice.amount_total, invoice.currency)}
+              </div>
+              {invoice.status !== 'paid' && (
+                <MarkPaidControl invoice={invoice} onMarkedPaid={handleMarkedPaid} />
+              )}
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function MarkPaidControl({
+  invoice,
+  onMarkedPaid,
+}: {
+  invoice: Invoice & { user: ClientAccount };
+  onMarkedPaid: (updated: Invoice & { user: ClientAccount }) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
+  const [reference, setReference] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleConfirm() {
+    setSubmitting(true);
+    setError('');
+    try {
+      const payload: MarkInvoicePaidPayload = {
+        payment_method: paymentMethod,
+        reference: reference || undefined,
+      };
+      const res = await adminApi.markInvoicePaid(invoice.id, payload);
+      onMarkedPaid(res.data);
+      setOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to mark invoice as paid.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="text-sm font-medium text-blue-primary hover:underline whitespace-nowrap"
+      >
+        Mark as Paid
+      </button>
+    );
+  }
+
+  return (
+    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex flex-col gap-2 w-full sm:w-64">
+      <select
+        value={paymentMethod}
+        onChange={(e) => setPaymentMethod(e.target.value)}
+        className="border border-slate-300 rounded-sm px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-accent"
+      >
+        <option value="bank_transfer">Bank transfer</option>
+        <option value="cash">Cash</option>
+        <option value="pos">POS</option>
+        <option value="other">Other</option>
+      </select>
+      <input
+        value={reference}
+        onChange={(e) => setReference(e.target.value)}
+        placeholder="Reference (optional)"
+        className="border border-slate-300 rounded-sm px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-accent"
+      />
+      {error && <p className="text-danger text-xs">{error}</p>}
+      <div className="flex gap-2">
+        <button
+          onClick={handleConfirm}
+          disabled={submitting}
+          className="flex-1 text-xs font-semibold text-white bg-success rounded-sm py-1.5 disabled:opacity-60"
+        >
+          {submitting ? 'Saving...' : 'Confirm Paid'}
+        </button>
+        <button
+          onClick={() => setOpen(false)}
+          className="text-xs font-medium text-text-soft px-2"
+        >
+          Cancel
+        </button>
       </div>
     </div>
   );

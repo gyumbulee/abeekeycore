@@ -13,6 +13,8 @@ const PORTAL_NAV = [
   { href: '/portal/contracts', label: 'Contracts' },
   { href: '/portal/domains', label: 'Domains' },
   { href: '/portal/transactions', label: 'Transactions' },
+  { href: '/portal/support', label: 'Support' },
+  { href: '/portal/profile', label: 'Profile' },
 ];
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {

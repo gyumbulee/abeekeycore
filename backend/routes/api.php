@@ -5,6 +5,8 @@ use App\Http\Controllers\Admin\ContactController as AdminContactController;
 use App\Http\Controllers\Admin\ContractController as AdminContractController;
 use App\Http\Controllers\Admin\DomainController as AdminDomainController;
 use App\Http\Controllers\Admin\InvoiceController as AdminInvoiceController;
+use App\Http\Controllers\Admin\QuotationController as AdminQuotationController;
+use App\Http\Controllers\Admin\SupportTicketController as AdminSupportTicketController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\TransactionController as AdminTransactionController;
 use App\Http\Controllers\Auth\AuthController;
@@ -14,6 +16,8 @@ use App\Http\Controllers\Portal\ContractController;
 use App\Http\Controllers\Portal\DomainController as PortalDomainController;
 use App\Http\Controllers\Portal\InvoiceController;
 use App\Http\Controllers\Portal\PaymentController;
+use App\Http\Controllers\Portal\ProfileController;
+use App\Http\Controllers\Portal\SupportTicketController;
 use App\Http\Controllers\Portal\QuotationController as PortalQuotationController;
 use App\Http\Controllers\Portal\TransactionController as PortalTransactionController;
 use App\Http\Controllers\QuotationController;
@@ -74,6 +78,14 @@ Route::middleware('auth:sanctum')->group(function () {
     |----------------------------------------------------------------------
     */
     Route::prefix('portal')->group(function () {
+        Route::patch('/profile', [ProfileController::class, 'update']);
+        Route::patch('/profile/password', [ProfileController::class, 'updatePassword'])->middleware('throttle:6,10');
+
+        Route::get('/support-tickets', [SupportTicketController::class, 'index']);
+        Route::post('/support-tickets', [SupportTicketController::class, 'store'])->middleware('throttle:10,10');
+        Route::get('/support-tickets/{id}', [SupportTicketController::class, 'show']);
+        Route::post('/support-tickets/{id}/messages', [SupportTicketController::class, 'addMessage'])->middleware('throttle:20,10');
+
         Route::get('/invoices', [InvoiceController::class, 'index']);
         Route::get('/invoices/{id}', [InvoiceController::class, 'show']);
 
@@ -110,6 +122,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/invoices', [AdminInvoiceController::class, 'index']);
         Route::post('/invoices', [AdminInvoiceController::class, 'store']);
+        Route::post('/invoices/{id}/mark-paid', [AdminInvoiceController::class, 'markPaid']);
+
+        Route::get('/quotations', [AdminQuotationController::class, 'index']);
+        Route::post('/quotations', [AdminQuotationController::class, 'store']);
+        Route::patch('/quotations/{id}', [AdminQuotationController::class, 'update']);
+
+        Route::get('/support-tickets', [AdminSupportTicketController::class, 'index']);
+        Route::get('/support-tickets/{id}', [AdminSupportTicketController::class, 'show']);
+        Route::post('/support-tickets/{id}/messages', [AdminSupportTicketController::class, 'addMessage']);
+        Route::patch('/support-tickets/{id}', [AdminSupportTicketController::class, 'update']);
 
         Route::get('/contracts', [AdminContractController::class, 'index']);
         Route::post('/contracts', [AdminContractController::class, 'store']);

@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\QuotationCreatedMail;
 use App\Models\Quotation;
 use App\Models\QuotationRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class LeadController extends Controller
@@ -78,6 +81,14 @@ class LeadController extends Controller
 
             return $quotation;
         });
+
+        $quotation->load('user:id,name,email');
+
+        try {
+            Mail::to($quotation->user->email)->send(new QuotationCreatedMail($quotation));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send quotation-created notification: '.$e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Lead converted to a quotation and sent to the client.',

@@ -7,11 +7,14 @@ import { useAuth } from '@/lib/auth-context';
 const ADMIN_NAV = [
   { href: '/admin', label: 'Dashboard' },
   { href: '/admin/leads', label: 'Leads (CRM)' },
+  { href: '/admin/clients', label: 'Clients' },
+  { href: '/admin/quotations', label: 'Quotations' },
   { href: '/admin/invoices', label: 'Invoices' },
   { href: '/admin/contracts', label: 'Contracts' },
   { href: '/admin/domains', label: 'Domains' },
   { href: '/admin/transactions', label: 'Transactions' },
   { href: '/admin/contacts', label: 'Contact Messages' },
+  { href: '/admin/support', label: 'Support Tickets' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

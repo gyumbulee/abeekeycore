@@ -14,6 +14,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'role',
         'password',
         'email_verified_at',
@@ -65,5 +66,10 @@ class User extends Authenticatable
     public function otps(): HasMany
     {
         return $this->hasMany(EmailOtp::class);
+    }
+
+    public function supportTickets(): HasMany
+    {
+        return $this->hasMany(SupportTicket::class);
     }
 }

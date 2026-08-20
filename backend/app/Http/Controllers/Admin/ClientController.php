@@ -10,7 +10,8 @@ class ClientController extends Controller
     public function index()
     {
         $clients = User::where('role', 'client')
-            ->select('id', 'name', 'email')
+            ->withCount(['invoices', 'quotations', 'contracts'])
+            ->select('id', 'name', 'email', 'created_at')
             ->orderBy('name')
             ->get();
 

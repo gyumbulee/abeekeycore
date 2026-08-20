@@ -8,15 +8,18 @@ const STATUS_STYLES: Record<string, string> = {
   registered: 'bg-success/10 text-success',
   successful: 'bg-success/10 text-success',
   replied: 'bg-success/10 text-success',
+  resolved: 'bg-success/10 text-success',
 
   sent: 'bg-blue-primary/10 text-blue-primary',
   quoted: 'bg-blue-primary/10 text-blue-primary',
   new: 'bg-blue-primary/10 text-blue-primary',
+  open: 'bg-blue-primary/10 text-blue-primary',
   processing: 'bg-blue-primary/10 text-blue-primary',
   pending: 'bg-blue-primary/10 text-blue-primary',
   pending_payment: 'bg-blue-primary/10 text-blue-primary',
   draft: 'bg-slate-200 text-text-soft',
   reviewed: 'bg-warning/10 text-warning',
+  in_progress: 'bg-warning/10 text-warning',
 
   overdue: 'bg-danger/10 text-danger',
   declined: 'bg-danger/10 text-danger',
@@ -25,6 +28,7 @@ const STATUS_STYLES: Record<string, string> = {
   failed: 'bg-danger/10 text-danger',
   registration_failed: 'bg-danger/10 text-danger',
   cancelled: 'bg-danger/10 text-danger',
+  closed: 'bg-slate-200 text-text-soft',
 
   expired: 'bg-warning/10 text-warning',
 };

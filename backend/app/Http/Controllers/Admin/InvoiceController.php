@@ -3,8 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\InvoiceCreatedMail;
 use App\Models\Invoice;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class InvoiceController extends Controller
 {
@@ -44,6 +50,61 @@ class InvoiceController extends Controller
             'notes' => $validated['notes'] ?? null,
         ]);
 
-        return response()->json(['data' => $invoice->load('user:id,name,email')], 201);
+        $invoice->load('user:id,name,email');
+
+        try {
+            Mail::to($invoice->user->email)->send(new InvoiceCreatedMail($invoice));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send invoice-created notification: '.$e->getMessage());
+        }
+
+        return response()->json(['data' => $invoice], 201);
+    }
+
+    /**
+     * Mark an invoice as paid manually — for offline payments (bank
+     * transfer, cash, POS) that don't go through the Flutterwave flow.
+     * Creates a Transaction record so it shows up consistently alongside
+     * webhook-reconciled payments in Transactions/receipts.
+     */
+    public function markPaid(Request $request, int $id)
+    {
+        $validated = $request->validate([
+            'payment_method' => ['required', 'string', 'max:50'], // e.g. bank_transfer, cash, pos
+            'reference' => ['nullable', 'string', 'max:100'],
+            'note' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $invoice = Invoice::findOrFail($id);
+
+        if ($invoice->isPaid()) {
+            return response()->json(['message' => 'This invoice is already marked as paid.'], 422);
+        }
+
+        $invoice = DB::transaction(function () use ($invoice, $validated, $request) {
+            Transaction::create([
+                'user_id' => $invoice->user_id,
+                'invoice_id' => $invoice->id,
+                'tx_ref' => 'MANUAL-'.strtoupper(Str::random(12)),
+                'flw_transaction_id' => null,
+                'amount' => $invoice->amount_total,
+                'currency' => $invoice->currency,
+                'status' => 'successful',
+                'payment_method' => $validated['payment_method'],
+                'receipt_number' => 'RCT-'.strtoupper(Str::random(10)),
+                'paid_at' => now(),
+                'meta' => [
+                    'recorded_manually_by' => $request->user()->id,
+                    'reference' => $validated['reference'] ?? null,
+                    'note' => $validated['note'] ?? null,
+                ],
+            ]);
+
+            $invoice->update(['status' => 'paid', 'paid_at' => now()]);
+
+            return $invoice->fresh();
+        });
+
+        return response()->json(['data' => $invoice->load('user:id,name,email')]);
     }
 }
