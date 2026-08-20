@@ -14,6 +14,7 @@ const PORTAL_NAV = [
   { href: '/portal/domains', label: 'Domains' },
   { href: '/portal/transactions', label: 'Transactions' },
   { href: '/portal/support', label: 'Support' },
+  { href: '/portal/security', label: 'Security' },
   { href: '/portal/profile', label: 'Profile' },
 ];
 

@@ -17,6 +17,7 @@ use App\Http\Controllers\Portal\DomainController as PortalDomainController;
 use App\Http\Controllers\Portal\InvoiceController;
 use App\Http\Controllers\Portal\PaymentController;
 use App\Http\Controllers\Portal\ProfileController;
+use App\Http\Controllers\Portal\SecurityController;
 use App\Http\Controllers\Portal\SupportTicketController;
 use App\Http\Controllers\Portal\QuotationController as PortalQuotationController;
 use App\Http\Controllers\Portal\TransactionController as PortalTransactionController;
@@ -80,6 +81,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('portal')->group(function () {
         Route::patch('/profile', [ProfileController::class, 'update']);
         Route::patch('/profile/password', [ProfileController::class, 'updatePassword'])->middleware('throttle:6,10');
+
+        Route::get('/security', [SecurityController::class, 'index']);
+        Route::post('/security/logout-other-sessions', [SecurityController::class, 'logoutOtherSessions'])->middleware('throttle:6,10');
 
         Route::get('/support-tickets', [SupportTicketController::class, 'index']);
         Route::post('/support-tickets', [SupportTicketController::class, 'store'])->middleware('throttle:10,10');

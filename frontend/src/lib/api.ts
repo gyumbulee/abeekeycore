@@ -100,6 +100,7 @@ export interface AuthUser {
   email: string;
   phone: string | null;
   role: 'client' | 'staff' | 'admin';
+  last_login_at?: string | null;
 }
 
 export interface UpdateProfilePayload {
@@ -402,6 +403,20 @@ export const adminApi = {
     }),
 };
 
+export interface SecuritySession {
+  id: string;
+  ip_address: string | null;
+  device: string;
+  last_active_at: string;
+  is_current_device: boolean;
+}
+
+export interface SecurityOverview {
+  last_login_at: string | null;
+  last_login_ip: string | null;
+  sessions: SecuritySession[];
+}
+
 export interface SupportTicketMessage {
   id: number;
   message: string;
@@ -508,6 +523,15 @@ export const api = {
     request<{ message: string }>('/portal/profile/password', {
       method: 'PATCH',
       body: JSON.stringify(payload),
+    }),
+
+  getSecurityOverview: () =>
+    request<{ data: SecurityOverview }>('/portal/security'),
+
+  logoutOtherSessions: (password: string) =>
+    request<{ message: string }>('/portal/security/logout-other-sessions', {
+      method: 'POST',
+      body: JSON.stringify({ password }),
     }),
 
   getSupportTickets: () =>

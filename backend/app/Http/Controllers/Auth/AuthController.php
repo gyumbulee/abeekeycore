@@ -72,7 +72,11 @@ class AuthController extends Controller
         }
 
         $otp->update(['consumed_at' => now()]);
-        $user->update(['email_verified_at' => now()]);
+        $user->update([
+            'email_verified_at' => now(),
+            'last_login_at' => now(),
+            'last_login_ip' => $request->ip(),
+        ]);
 
         Auth::login($user);
         $request->session()->regenerate();
@@ -131,6 +135,11 @@ class AuthController extends Controller
                 'email' => $user->email,
             ], 403);
         }
+
+        $user->update([
+            'last_login_at' => now(),
+            'last_login_ip' => $request->ip(),
+        ]);
 
         $request->session()->regenerate();
 
