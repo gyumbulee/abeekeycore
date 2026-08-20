@@ -100,6 +100,7 @@ export interface AuthUser {
   email: string;
   phone: string | null;
   role: 'client' | 'staff' | 'admin';
+  permissions?: string[] | null;
   last_login_at?: string | null;
 }
 
@@ -401,7 +402,54 @@ export const adminApi = {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
+
+  getStaffAccounts: () =>
+    request<{ data: StaffAccount[] }>('/admin/users'),
+
+  getPermissionOptions: () =>
+    request<{ data: PermissionOption[] }>('/admin/users/permissions'),
+
+  createStaffAccount: (payload: CreateStaffPayload) =>
+    request<{ data: StaffAccount }>('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  updateStaffAccount: (id: number, payload: UpdateStaffPayload) =>
+    request<{ data: StaffAccount }>(`/admin/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
 };
+
+export interface StaffAccount {
+  id: number;
+  name: string;
+  email: string;
+  role: 'admin' | 'staff';
+  permissions: string[] | null;
+  is_active: boolean;
+  last_login_at: string | null;
+  created_at: string;
+}
+
+export interface PermissionOption {
+  key: string;
+  label: string;
+}
+
+export interface CreateStaffPayload {
+  name: string;
+  email: string;
+  role: 'admin' | 'staff';
+  permissions?: string[];
+}
+
+export interface UpdateStaffPayload {
+  role?: 'admin' | 'staff';
+  permissions?: string[];
+  is_active?: boolean;
+}
 
 export interface SecuritySession {
   id: string;

@@ -32,10 +32,11 @@ function LoginContent() {
   const [errorMsg, setErrorMsg] = useState('');
 
   function goAfterAuth(role: 'client' | 'staff' | 'admin') {
-    if (redirectTo && role !== 'admin') {
+    const isStaffOrAdmin = role === 'admin' || role === 'staff';
+    if (redirectTo && ! isStaffOrAdmin) {
       router.push(redirectTo);
     } else {
-      router.push(role === 'admin' ? '/admin' : '/portal');
+      router.push(isStaffOrAdmin ? '/admin' : '/portal');
     }
   }
 

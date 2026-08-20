@@ -16,6 +16,8 @@ class User extends Authenticatable
         'email',
         'phone',
         'role',
+        'permissions',
+        'is_active',
         'password',
         'email_verified_at',
         'last_login_at',
@@ -32,6 +34,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'permissions' => 'array',
+            'is_active' => 'boolean',
             'password' => 'hashed',
         ];
     }
@@ -39,6 +43,27 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    /**
+     * The real access check, used by the `permission:{key}` middleware.
+     * Admins always pass. Staff pass only if the key is in their granted
+     * permissions array. The 'users' permission is intentionally excluded
+     * from what staff can ever be granted — see App\Support\Permissions —
+     * so this always returns false for it unless the role is admin,
+     * regardless of what's stored in the permissions column.
+     */
+    public function canAccess(string $permission): bool
+    {
+        if ($this->role === 'admin') {
+            return true;
+        }
+
+        if ($permission === 'users') {
+            return false;
+        }
+
+        return $this->role === 'staff' && in_array($permission, $this->permissions ?? [], true);
     }
 
     public function invoices(): HasMany

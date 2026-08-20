@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\DomainController as AdminDomainController;
 use App\Http\Controllers\Admin\InvoiceController as AdminInvoiceController;
 use App\Http\Controllers\Admin\QuotationController as AdminQuotationController;
 use App\Http\Controllers\Admin\SupportTicketController as AdminSupportTicketController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\TransactionController as AdminTransactionController;
 use App\Http\Controllers\Auth\AuthController;
@@ -118,34 +119,62 @@ Route::middleware('auth:sanctum')->group(function () {
     |----------------------------------------------------------------------
     */
     Route::prefix('admin')->middleware('admin')->group(function () {
-        Route::get('/leads', [LeadController::class, 'index']);
-        Route::get('/leads/{id}', [LeadController::class, 'show']);
-        Route::post('/leads/{id}/convert', [LeadController::class, 'convert']);
+        Route::middleware('permission:leads')->group(function () {
+            Route::get('/leads', [LeadController::class, 'index']);
+            Route::get('/leads/{id}', [LeadController::class, 'show']);
+            Route::post('/leads/{id}/convert', [LeadController::class, 'convert']);
+        });
 
-        Route::get('/clients', [AdminClientController::class, 'index']);
+        Route::middleware('permission:clients')->group(function () {
+            Route::get('/clients', [AdminClientController::class, 'index']);
+        });
 
-        Route::get('/invoices', [AdminInvoiceController::class, 'index']);
-        Route::post('/invoices', [AdminInvoiceController::class, 'store']);
-        Route::post('/invoices/{id}/mark-paid', [AdminInvoiceController::class, 'markPaid']);
+        Route::middleware('permission:invoices')->group(function () {
+            Route::get('/invoices', [AdminInvoiceController::class, 'index']);
+            Route::post('/invoices', [AdminInvoiceController::class, 'store']);
+            Route::post('/invoices/{id}/mark-paid', [AdminInvoiceController::class, 'markPaid']);
+        });
 
-        Route::get('/quotations', [AdminQuotationController::class, 'index']);
-        Route::post('/quotations', [AdminQuotationController::class, 'store']);
-        Route::patch('/quotations/{id}', [AdminQuotationController::class, 'update']);
+        Route::middleware('permission:quotations')->group(function () {
+            Route::get('/quotations', [AdminQuotationController::class, 'index']);
+            Route::post('/quotations', [AdminQuotationController::class, 'store']);
+            Route::patch('/quotations/{id}', [AdminQuotationController::class, 'update']);
+        });
 
-        Route::get('/support-tickets', [AdminSupportTicketController::class, 'index']);
-        Route::get('/support-tickets/{id}', [AdminSupportTicketController::class, 'show']);
-        Route::post('/support-tickets/{id}/messages', [AdminSupportTicketController::class, 'addMessage']);
-        Route::patch('/support-tickets/{id}', [AdminSupportTicketController::class, 'update']);
+        Route::middleware('permission:support-tickets')->group(function () {
+            Route::get('/support-tickets', [AdminSupportTicketController::class, 'index']);
+            Route::get('/support-tickets/{id}', [AdminSupportTicketController::class, 'show']);
+            Route::post('/support-tickets/{id}/messages', [AdminSupportTicketController::class, 'addMessage']);
+            Route::patch('/support-tickets/{id}', [AdminSupportTicketController::class, 'update']);
+        });
 
-        Route::get('/contracts', [AdminContractController::class, 'index']);
-        Route::post('/contracts', [AdminContractController::class, 'store']);
+        Route::middleware('permission:contracts')->group(function () {
+            Route::get('/contracts', [AdminContractController::class, 'index']);
+            Route::post('/contracts', [AdminContractController::class, 'store']);
+        });
 
-        Route::get('/transactions', [AdminTransactionController::class, 'index']);
+        Route::middleware('permission:transactions')->group(function () {
+            Route::get('/transactions', [AdminTransactionController::class, 'index']);
+        });
 
-        Route::get('/domains', [AdminDomainController::class, 'index']);
+        Route::middleware('permission:domains')->group(function () {
+            Route::get('/domains', [AdminDomainController::class, 'index']);
+        });
 
-        Route::get('/contacts', [AdminContactController::class, 'index']);
-        Route::get('/contacts/{id}', [AdminContactController::class, 'show']);
-        Route::post('/contacts/{id}/reply', [AdminContactController::class, 'reply']);
+        Route::middleware('permission:contacts')->group(function () {
+            Route::get('/contacts', [AdminContactController::class, 'index']);
+            Route::get('/contacts/{id}', [AdminContactController::class, 'show']);
+            Route::post('/contacts/{id}/reply', [AdminContactController::class, 'reply']);
+        });
+
+        // Staff/user management — 'users' is never grantable to staff (see
+        // App\Support\Permissions and User::canAccess()), so this is
+        // effectively admin-only regardless of any staff permissions array.
+        Route::middleware('permission:users')->group(function () {
+            Route::get('/users', [AdminUserController::class, 'index']);
+            Route::get('/users/permissions', [AdminUserController::class, 'permissions']);
+            Route::post('/users', [AdminUserController::class, 'store']);
+            Route::patch('/users/{id}', [AdminUserController::class, 'update']);
+        });
     });
 });

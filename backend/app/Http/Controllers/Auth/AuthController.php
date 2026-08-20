@@ -125,6 +125,14 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
+        if (! $user->is_active) {
+            Auth::logout();
+
+            return response()->json([
+                'message' => 'This account has been deactivated. Please contact Abeekey support.',
+            ], 403);
+        }
+
         if (! $user->email_verified_at) {
             Auth::logout();
             $this->issueOtp($user);
