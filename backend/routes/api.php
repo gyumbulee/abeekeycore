@@ -6,11 +6,15 @@ use App\Http\Controllers\Admin\ContractController as AdminContractController;
 use App\Http\Controllers\Admin\DomainController as AdminDomainController;
 use App\Http\Controllers\Admin\InvoiceController as AdminInvoiceController;
 use App\Http\Controllers\Admin\QuotationController as AdminQuotationController;
+use App\Http\Controllers\Admin\BlogController as AdminBlogController;
+use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\SupportTicketController as AdminSupportTicketController;
+use App\Http\Controllers\Admin\UploadController as AdminUploadController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\TransactionController as AdminTransactionController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\BlogController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\Portal\ContractController;
@@ -46,6 +50,10 @@ Route::post('/training/applications', [TrainingController::class, 'store'])->mid
 Route::get('/training/courses', [TrainingController::class, 'courses']);
 
 Route::get('/domains/search', [DomainController::class, 'search'])->middleware('throttle:15,5'); // 15 searches per 5 minutes per IP — each search fans out to several ConnectReseller API calls
+
+Route::get('/blog', [BlogController::class, 'index']);
+Route::get('/blog/categories', [BlogController::class, 'categories']);
+Route::get('/blog/{slug}', [BlogController::class, 'show']);
 
 /*
 |--------------------------------------------------------------------------
@@ -167,6 +175,15 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/contacts/{id}/reply', [AdminContactController::class, 'reply']);
         });
 
+        Route::middleware('permission:blog')->group(function () {
+            Route::get('/blog-posts', [AdminBlogController::class, 'index']);
+            Route::get('/blog-posts/{id}', [AdminBlogController::class, 'show']);
+            Route::post('/blog-posts', [AdminBlogController::class, 'store']);
+            Route::patch('/blog-posts/{id}', [AdminBlogController::class, 'update']);
+            Route::delete('/blog-posts/{id}', [AdminBlogController::class, 'destroy']);
+            Route::post('/uploads/image', [AdminUploadController::class, 'image'])->middleware('throttle:20,10');
+        });
+
         // Staff/user management — 'users' is never grantable to staff (see
         // App\Support\Permissions and User::canAccess()), so this is
         // effectively admin-only regardless of any staff permissions array.
@@ -175,6 +192,13 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/users/permissions', [AdminUserController::class, 'permissions']);
             Route::post('/users', [AdminUserController::class, 'store']);
             Route::patch('/users/{id}', [AdminUserController::class, 'update']);
+        });
+
+        // Domain pricing settings — 'settings' is likewise never grantable
+        // to staff (see the same files above), admin-only.
+        Route::middleware('permission:settings')->group(function () {
+            Route::get('/settings', [AdminSettingController::class, 'index']);
+            Route::patch('/settings', [AdminSettingController::class, 'update']);
         });
     });
 });

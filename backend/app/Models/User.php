@@ -48,9 +48,9 @@ class User extends Authenticatable
     /**
      * The real access check, used by the `permission:{key}` middleware.
      * Admins always pass. Staff pass only if the key is in their granted
-     * permissions array. The 'users' permission is intentionally excluded
+     * permissions array. 'users' and 'settings' are intentionally excluded
      * from what staff can ever be granted — see App\Support\Permissions —
-     * so this always returns false for it unless the role is admin,
+     * so this always returns false for them unless the role is admin,
      * regardless of what's stored in the permissions column.
      */
     public function canAccess(string $permission): bool
@@ -59,7 +59,7 @@ class User extends Authenticatable
             return true;
         }
 
-        if ($permission === 'users') {
+        if (in_array($permission, ['users', 'settings'], true)) {
             return false;
         }
 
@@ -99,5 +99,10 @@ class User extends Authenticatable
     public function supportTickets(): HasMany
     {
         return $this->hasMany(SupportTicket::class);
+    }
+
+    public function blogPosts(): HasMany
+    {
+        return $this->hasMany(BlogPost::class, 'author_id');
     }
 }

@@ -14,6 +14,27 @@ export class ApiError extends Error {
 }
 
 /**
+ * Plain, cookie-free fetch for fully public read endpoints (currently:
+ * the blog). Unlike request() below, this never touches `document`, so
+ * it's safe to call from a Server Component — needed for the blog post
+ * page's generateMetadata, which runs before any client code and has no
+ * DOM to read cookies from.
+ */
+export async function fetchPublic<T>(path: string, revalidateSeconds = 300): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
+    headers: { Accept: 'application/json' },
+    next: { revalidate: revalidateSeconds },
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ApiError(body.message || 'Request failed', res.status, body);
+  }
+
+  return res.json();
+}
+
+/**
  * Sanctum SPA auth requires this to be called once before register/login
  * (it sets the XSRF-TOKEN cookie that Laravel then expects back on the
  * next POST). Safe to call multiple times.
@@ -47,6 +68,33 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   if (res.status === 204) return undefined as T;
+  return res.json();
+}
+
+/**
+ * Like request(), but for multipart/form-data uploads. Deliberately does
+ * NOT set Content-Type — the browser sets multipart/form-data with the
+ * correct boundary automatically when the body is a FormData instance;
+ * setting it manually here would break upload parsing on the server.
+ */
+async function requestMultipart<T>(path: string, formData: FormData): Promise<T> {
+  const xsrfToken = typeof document !== 'undefined' ? readCookie('XSRF-TOKEN') : null;
+
+  const res = await fetch(`${API_URL}${path}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ApiError(body.message || 'Request failed', res.status, body);
+  }
+
   return res.json();
 }
 
@@ -93,6 +141,37 @@ export interface TrainingApplicationPayload {
   notes?: string;
   hp_field_9x2?: string;
 }
+
+export interface BlogPost {
+  id: number;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  content: string;
+  cover_image_url: string | null;
+  category: string | null;
+  status: 'draft' | 'published';
+  published_at: string | null;
+  created_at: string;
+  author?: { id: number; name: string } | null;
+}
+
+export interface BlogPaginationMeta {
+  current_page: number;
+  last_page: number;
+  total: number;
+}
+
+export interface CreateBlogPostPayload {
+  title: string;
+  excerpt?: string;
+  content: string;
+  cover_image_url?: string;
+  category?: string;
+  status: 'draft' | 'published';
+}
+
+export type UpdateBlogPostPayload = Partial<CreateBlogPostPayload>;
 
 export interface AuthUser {
   id: number;
@@ -420,7 +499,66 @@ export const adminApi = {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
+
+  getSettings: () =>
+    request<{ data: SettingsOverview }>('/admin/settings'),
+
+  updateSettings: (payload: UpdateSettingsPayload) =>
+    request<{ data: SettingsOverview }>('/admin/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  getBlogPosts: () =>
+    request<{ data: BlogPost[] }>('/admin/blog-posts'),
+
+  getBlogPost: (id: number) =>
+    request<{ data: BlogPost }>(`/admin/blog-posts/${id}`),
+
+  createBlogPost: (payload: CreateBlogPostPayload) =>
+    request<{ data: BlogPost }>('/admin/blog-posts', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  updateBlogPost: (id: number, payload: UpdateBlogPostPayload) =>
+    request<{ data: BlogPost }>(`/admin/blog-posts/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  deleteBlogPost: (id: number) =>
+    request<{ message: string }>(`/admin/blog-posts/${id}`, {
+      method: 'DELETE',
+    }),
+
+  uploadImage: (file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return requestMultipart<{ data: { url: string } }>('/admin/uploads/image', formData);
+  },
 };
+
+export interface SettingValue<T> {
+  value: T;
+  source: 'db' | 'env';
+}
+
+export interface DomainSettings {
+  markup_percent: SettingValue<number>;
+  usd_to_ngn_rate: SettingValue<number>;
+  tld_markup_overrides: SettingValue<Record<string, number>>;
+}
+
+export interface SettingsOverview {
+  domains: DomainSettings;
+}
+
+export interface UpdateSettingsPayload {
+  markup_percent?: number;
+  usd_to_ngn_rate?: number;
+  tld_markup_overrides?: Record<string, number>;
+}
 
 export interface StaffAccount {
   id: number;
@@ -493,6 +631,17 @@ export interface CreateSupportTicketPayload {
 export const api = {
   getServices: () =>
     request<{ data: { slug: string; name: string; icon: string }[] }>('/services'),
+
+  getBlogPosts: (category?: string, page = 1) =>
+    request<{ data: BlogPost[]; meta: BlogPaginationMeta }>(
+      `/blog?page=${page}${category ? `&category=${encodeURIComponent(category)}` : ''}`
+    ),
+
+  getBlogCategories: () =>
+    request<{ data: string[] }>('/blog/categories'),
+
+  getBlogPost: (slug: string) =>
+    request<{ data: BlogPost }>(`/blog/${slug}`),
 
   submitContact: (payload: ContactPayload) =>
     request('/contact', {

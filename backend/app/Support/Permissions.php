@@ -12,6 +12,11 @@ class Permissions
      * admin-only and enforced directly in User::canAccess(), never
      * grantable through the permissions array, so a staff member can never
      * escalate their own or another account's access.
+     *
+     * 'settings' is excluded for the same reason — it controls domain
+     * pricing (markup, USD/NGN rate), which directly affects revenue, so
+     * it's hardcoded admin-only in User::canAccess() rather than being a
+     * grantable permission.
      */
     public const CATALOG = [
         'leads' => 'Leads (CRM)',
@@ -23,6 +28,7 @@ class Permissions
         'transactions' => 'Transactions',
         'contacts' => 'Contact Messages',
         'support-tickets' => 'Support Tickets',
+        'blog' => 'Blog / CMS',
     ];
 
     public static function keys(): array

@@ -15,7 +15,9 @@ const ADMIN_NAV: { href: string; label: string; permission?: string }[] = [
   { href: '/admin/transactions', label: 'Transactions', permission: 'transactions' },
   { href: '/admin/contacts', label: 'Contact Messages', permission: 'contacts' },
   { href: '/admin/support', label: 'Support Tickets', permission: 'support-tickets' },
+  { href: '/admin/blog', label: 'Blog', permission: 'blog' },
   { href: '/admin/users', label: 'Users & Roles' }, // admin-only, filtered below
+  { href: '/admin/settings', label: 'Settings' }, // admin-only, filtered below
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -42,6 +44,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const visibleNav = ADMIN_NAV.filter((item) => {
     if (user.role === 'admin') return true; // admins see and can access everything
     if (item.href === '/admin/users') return false; // staff management is admin-only
+    if (item.href === '/admin/settings') return false; // pricing settings are admin-only
     if (!item.permission) return true; // Dashboard has no permission gate
     return user.permissions?.includes(item.permission);
   });

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Setting;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -109,14 +110,16 @@ class ConnectResellerService
     }
 
     /**
-     * Markup multiplier for a given TLD — checks for a per-TLD override in
-     * config('domains.tld_markup_overrides'), falling back to the global
-     * config('domains.markup_percent'). Returns e.g. 1.3 for a 30% markup.
+     * Markup multiplier for a given TLD — checks for a per-TLD override,
+     * falling back to the global default markup. Both are admin-editable
+     * at runtime via Setting (see Admin\SettingController); the config()
+     * value only applies until an admin actually changes it there.
+     * Returns e.g. 1.3 for a 30% markup.
      */
     public function markupMultiplier(string $tld): float
     {
-        $overrides = config('domains.tld_markup_overrides', []);
-        $percent = $overrides[$tld] ?? config('domains.markup_percent', 30);
+        $overrides = Setting::get('domains.tld_markup_overrides', config('domains.tld_markup_overrides', []));
+        $percent = $overrides[$tld] ?? Setting::get('domains.markup_percent', config('domains.markup_percent', 30));
 
         return 1 + ((float) $percent / 100);
     }
@@ -174,7 +177,7 @@ class ConnectResellerService
                     );
 
                     $rate = $sourceCurrency === 'USD'
-                        ? (float) config('domains.usd_to_ngn_rate', 1600)
+                        ? (float) Setting::get('domains.usd_to_ngn_rate', config('domains.usd_to_ngn_rate', 1600))
                         : 1.0;
 
                     $catalog[$tld] = [
