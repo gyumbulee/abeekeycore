@@ -11,10 +11,11 @@ class UploadController extends Controller
 {
     /**
      * Upload an image (blog cover/content images for now) and return its
-     * public URL. Stored on the 'public' disk (see config/filesystems.php)
-     * regardless of the app's default filesystem disk — that disk exists
-     * specifically for user-facing uploads. Requires
-     * `php artisan storage:link` to have been run once per environment.
+     * public URL. Stored on whichever disk config('filesystems.default')
+     * points to (see config/filesystems.php) — 'public' (local) until an
+     * admin sets FILESYSTEM_DISK=s3 with real AWS credentials, after which
+     * uploads switch to S3 automatically with no code change needed.
+     * Local disk requires `php artisan storage:link` once per environment.
      */
     public function image(Request $request)
     {
@@ -22,13 +23,14 @@ class UploadController extends Controller
             'image' => ['required', 'image', 'max:5120', 'mimes:jpeg,jpg,png,gif,webp'], // 5MB max
         ]);
 
+        $disk = config('filesystems.default');
         $file = $request->file('image');
         $filename = Str::uuid().'.'.$file->getClientOriginalExtension();
-        $path = $file->storeAs('blog-uploads', $filename, 'public');
+        $path = $file->storeAs('blog-uploads', $filename, $disk);
 
         return response()->json([
             'data' => [
-                'url' => Storage::disk('public')->url($path),
+                'url' => Storage::disk($disk)->url($path),
             ],
         ], 201);
     }

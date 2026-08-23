@@ -55,7 +55,15 @@ export default function BlogPage() {
       <Navbar />
       <main className="pt-[72px] min-h-screen bg-bg">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <p className="text-blue-primary font-semibold text-sm tracking-wide uppercase mb-2">Abeekey Journal</p>
+        <div className="flex items-center justify-between gap-4 mb-2">
+          <p className="text-blue-primary font-semibold text-sm tracking-wide uppercase">Abeekey Journal</p>
+          <a
+            href="/rss.xml"
+            className="text-xs font-semibold text-text-soft hover:text-blue-primary flex items-center gap-1"
+          >
+            RSS
+          </a>
+        </div>
         <h1 className="font-heading font-bold text-navy-primary text-4xl sm:text-5xl mb-4">
           Notes from the build
         </h1>

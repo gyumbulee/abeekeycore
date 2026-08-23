@@ -53,7 +53,13 @@ return [
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
-            'throw' => false,
+            // NOT using 'visibility' => 'public' here on purpose: that
+            // makes Flysystem apply a public-read ACL on every upload, but
+            // most S3 buckets now have ACLs disabled by default ("Object
+            // Ownership: Bucket owner enforced"), which makes every upload
+            // silently fail. Public read is granted via a bucket policy
+            // instead — see the bucket policy note in UploadController.
+            'throw' => true, // surface real S3 errors instead of silently returning false
             'report' => false,
         ],
 
