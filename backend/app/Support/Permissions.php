@@ -29,6 +29,7 @@ class Permissions
         'contacts' => 'Contact Messages',
         'support-tickets' => 'Support Tickets',
         'blog' => 'Blog / CMS',
+        'portfolio' => 'Portfolio / Case Studies',
     ];
 
     public static function keys(): array

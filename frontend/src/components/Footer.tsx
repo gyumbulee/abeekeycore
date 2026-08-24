@@ -43,6 +43,14 @@ export default function Footer() {
               Industries
             </a>
 
+            <a href="/portfolio" className="block text-sm mb-3 hover:text-white transition-colors">
+              Portfolio
+            </a>
+
+            <a href="/blog" className="block text-sm mb-3 hover:text-white transition-colors">
+              Blog
+            </a>
+
             <a href="/training" className="block text-sm mb-3 hover:text-white transition-colors">
               Training
             </a>

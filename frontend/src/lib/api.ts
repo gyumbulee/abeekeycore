@@ -173,6 +173,41 @@ export interface CreateBlogPostPayload {
 
 export type UpdateBlogPostPayload = Partial<CreateBlogPostPayload>;
 
+export interface PortfolioProject {
+  id: number;
+  title: string;
+  slug: string;
+  client_name: string | null;
+  industry: string | null;
+  summary: string | null;
+  description: string;
+  cover_image_url: string | null;
+  gallery_images: string[] | null;
+  technologies: string[] | null;
+  project_url: string | null;
+  status: 'draft' | 'published';
+  completed_at: string | null;
+  published_at: string | null;
+  created_at: string;
+  author?: { id: number; name: string } | null;
+}
+
+export interface CreatePortfolioProjectPayload {
+  title: string;
+  client_name?: string;
+  industry?: string;
+  summary?: string;
+  description: string;
+  cover_image_url?: string;
+  gallery_images?: string[];
+  technologies?: string[];
+  project_url?: string;
+  status: 'draft' | 'published';
+  completed_at?: string;
+}
+
+export type UpdatePortfolioProjectPayload = Partial<CreatePortfolioProjectPayload>;
+
 export interface AuthUser {
   id: number;
   name: string;
@@ -532,11 +567,35 @@ export const adminApi = {
       method: 'DELETE',
     }),
 
-  uploadImage: (file: File) => {
+  uploadImage: (file: File, folder?: 'blog-uploads' | 'portfolio-uploads') => {
     const formData = new FormData();
     formData.append('image', file);
+    if (folder) formData.append('folder', folder);
     return requestMultipart<{ data: { url: string } }>('/admin/uploads/image', formData);
   },
+
+  getPortfolioProjects: () =>
+    request<{ data: PortfolioProject[] }>('/admin/portfolio-projects'),
+
+  getPortfolioProject: (id: number) =>
+    request<{ data: PortfolioProject }>(`/admin/portfolio-projects/${id}`),
+
+  createPortfolioProject: (payload: CreatePortfolioProjectPayload) =>
+    request<{ data: PortfolioProject }>('/admin/portfolio-projects', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  updatePortfolioProject: (id: number, payload: UpdatePortfolioProjectPayload) =>
+    request<{ data: PortfolioProject }>(`/admin/portfolio-projects/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  deletePortfolioProject: (id: number) =>
+    request<{ message: string }>(`/admin/portfolio-projects/${id}`, {
+      method: 'DELETE',
+    }),
 };
 
 export interface SettingValue<T> {
@@ -642,6 +701,14 @@ export const api = {
 
   getBlogPost: (slug: string) =>
     request<{ data: BlogPost }>(`/blog/${slug}`),
+
+  getPortfolioProjects: (industry?: string, page = 1) =>
+    request<{ data: PortfolioProject[]; meta: BlogPaginationMeta }>(
+      `/portfolio?page=${page}${industry ? `&industry=${encodeURIComponent(industry)}` : ''}`
+    ),
+
+  getPortfolioIndustries: () =>
+    request<{ data: string[] }>('/portfolio/industries'),
 
   submitContact: (payload: ContactPayload) =>
     request('/contact', {

@@ -19,3 +19,17 @@ body {
     transition: none !important;
   }
 }
+
+/*
+ * Hides the scrollbar track/thumb while leaving the element fully
+ * scrollable via wheel, touch, or keyboard. Used on the admin/portal
+ * sidebar nav, and on the public Navbar's horizontal link scroller.
+ */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}

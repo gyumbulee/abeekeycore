@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\DomainController as AdminDomainController;
 use App\Http\Controllers\Admin\InvoiceController as AdminInvoiceController;
 use App\Http\Controllers\Admin\QuotationController as AdminQuotationController;
 use App\Http\Controllers\Admin\BlogController as AdminBlogController;
+use App\Http\Controllers\Admin\PortfolioController as AdminPortfolioController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\SupportTicketController as AdminSupportTicketController;
 use App\Http\Controllers\Admin\UploadController as AdminUploadController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\Portal\SecurityController;
 use App\Http\Controllers\Portal\SupportTicketController;
 use App\Http\Controllers\Portal\QuotationController as PortalQuotationController;
 use App\Http\Controllers\Portal\TransactionController as PortalTransactionController;
+use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\QuotationController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\TrainingController;
@@ -54,6 +56,10 @@ Route::get('/domains/search', [DomainController::class, 'search'])->middleware('
 Route::get('/blog', [BlogController::class, 'index']);
 Route::get('/blog/categories', [BlogController::class, 'categories']);
 Route::get('/blog/{slug}', [BlogController::class, 'show']);
+
+Route::get('/portfolio', [PortfolioController::class, 'index']);
+Route::get('/portfolio/industries', [PortfolioController::class, 'industries']);
+Route::get('/portfolio/{slug}', [PortfolioController::class, 'show']);
 
 /*
 |--------------------------------------------------------------------------
@@ -181,8 +187,23 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/blog-posts', [AdminBlogController::class, 'store']);
             Route::patch('/blog-posts/{id}', [AdminBlogController::class, 'update']);
             Route::delete('/blog-posts/{id}', [AdminBlogController::class, 'destroy']);
-            Route::post('/uploads/image', [AdminUploadController::class, 'image'])->middleware('throttle:20,10');
         });
+
+        Route::middleware('permission:portfolio')->group(function () {
+            Route::get('/portfolio-projects', [AdminPortfolioController::class, 'index']);
+            Route::get('/portfolio-projects/{id}', [AdminPortfolioController::class, 'show']);
+            Route::post('/portfolio-projects', [AdminPortfolioController::class, 'store']);
+            Route::patch('/portfolio-projects/{id}', [AdminPortfolioController::class, 'update']);
+            Route::delete('/portfolio-projects/{id}', [AdminPortfolioController::class, 'destroy']);
+        });
+
+        // Not permission-gated to a single resource: uploading a file is
+        // inert on its own (it's only ever meaningful once attached to a
+        // blog post or portfolio project, which remain gated above), so
+        // any authenticated staff/admin can use it — gating it to one
+        // resource's permission would block, e.g., a portfolio-only editor
+        // from uploading their own cover images.
+        Route::post('/uploads/image', [AdminUploadController::class, 'image'])->middleware('throttle:20,10');
 
         // Staff/user management — 'users' is never grantable to staff (see
         // App\Support\Permissions and User::canAccess()), so this is

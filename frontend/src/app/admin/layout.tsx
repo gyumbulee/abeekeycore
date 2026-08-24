@@ -3,22 +3,87 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import DashboardSidebar, { SidebarNavGroup } from '@/components/DashboardSidebar';
+import {
+  LayoutDashboard,
+  Target,
+  Users,
+  FileText,
+  Receipt,
+  FileSignature,
+  Globe,
+  ArrowLeftRight,
+  Mail,
+  LifeBuoy,
+  Newspaper,
+  Briefcase,
+  ShieldCheck,
+  Settings,
+} from 'lucide-react';
 
-const ADMIN_NAV: { href: string; label: string; permission?: string }[] = [
-  { href: '/admin', label: 'Dashboard' },
-  { href: '/admin/leads', label: 'Leads (CRM)', permission: 'leads' },
-  { href: '/admin/clients', label: 'Clients', permission: 'clients' },
-  { href: '/admin/quotations', label: 'Quotations', permission: 'quotations' },
-  { href: '/admin/invoices', label: 'Invoices', permission: 'invoices' },
-  { href: '/admin/contracts', label: 'Contracts', permission: 'contracts' },
-  { href: '/admin/domains', label: 'Domains', permission: 'domains' },
-  { href: '/admin/transactions', label: 'Transactions', permission: 'transactions' },
-  { href: '/admin/contacts', label: 'Contact Messages', permission: 'contacts' },
-  { href: '/admin/support', label: 'Support Tickets', permission: 'support-tickets' },
-  { href: '/admin/blog', label: 'Blog', permission: 'blog' },
-  { href: '/admin/users', label: 'Users & Roles' }, // admin-only, filtered below
-  { href: '/admin/settings', label: 'Settings' }, // admin-only, filtered below
+// Grouped so the nav scales as more modules land (HR, Finance, Marketing,
+// etc. per the platform roadmap) without turning into an unscannable
+// single row. Each item's optional `permission` gates it for staff
+// accounts — admins always see everything (filtered below).
+const ADMIN_NAV: SidebarNavGroup[] = [
+  { items: [{ href: '/admin', label: 'Dashboard', icon: LayoutDashboard }] },
+  {
+    label: 'CRM',
+    items: [
+      { href: '/admin/leads', label: 'Leads', icon: Target },
+      { href: '/admin/clients', label: 'Clients', icon: Users },
+    ],
+  },
+  {
+    label: 'Sales & Billing',
+    items: [
+      { href: '/admin/quotations', label: 'Quotations', icon: FileText },
+      { href: '/admin/invoices', label: 'Invoices', icon: Receipt },
+      { href: '/admin/contracts', label: 'Contracts', icon: FileSignature },
+      { href: '/admin/domains', label: 'Domains', icon: Globe },
+      { href: '/admin/transactions', label: 'Transactions', icon: ArrowLeftRight },
+    ],
+  },
+  {
+    label: 'Content',
+    items: [
+      { href: '/admin/blog', label: 'Blog', icon: Newspaper },
+      { href: '/admin/portfolio', label: 'Portfolio', icon: Briefcase },
+    ],
+  },
+  {
+    label: 'Support',
+    items: [
+      { href: '/admin/contacts', label: 'Contact Messages', icon: Mail },
+      { href: '/admin/support', label: 'Support Tickets', icon: LifeBuoy },
+    ],
+  },
+  {
+    label: 'Administration',
+    items: [
+      { href: '/admin/users', label: 'Users & Roles', icon: ShieldCheck },
+      { href: '/admin/settings', label: 'Settings', icon: Settings },
+    ],
+  },
 ];
+
+const PERMISSION_BY_HREF: Record<string, string> = {
+  '/admin/leads': 'leads',
+  '/admin/clients': 'clients',
+  '/admin/quotations': 'quotations',
+  '/admin/invoices': 'invoices',
+  '/admin/contracts': 'contracts',
+  '/admin/domains': 'domains',
+  '/admin/transactions': 'transactions',
+  '/admin/blog': 'blog',
+  '/admin/portfolio': 'portfolio',
+  '/admin/contacts': 'contacts',
+  '/admin/support': 'support-tickets',
+};
+// '/admin/users' and '/admin/settings' are deliberately absent — staff
+// management and pricing settings are admin-only regardless of the
+// permissions array (see App\Support\Permissions on the backend).
+const ADMIN_ONLY_HREFS = new Set(['/admin/users', '/admin/settings']);
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
@@ -41,43 +106,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  const visibleNav = ADMIN_NAV.filter((item) => {
-    if (user.role === 'admin') return true; // admins see and can access everything
-    if (item.href === '/admin/users') return false; // staff management is admin-only
-    if (item.href === '/admin/settings') return false; // pricing settings are admin-only
-    if (!item.permission) return true; // Dashboard has no permission gate
-    return user.permissions?.includes(item.permission);
-  });
+  const visibleGroups: SidebarNavGroup[] = ADMIN_NAV.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => {
+      if (user.role === 'admin') return true; // admins see and can access everything
+      if (ADMIN_ONLY_HREFS.has(item.href)) return false;
+      const permission = PERMISSION_BY_HREF[item.href];
+      if (!permission) return true; // Dashboard has no permission gate
+      return user.permissions?.includes(permission);
+    }),
+  })).filter((group) => group.items.length > 0);
 
   return (
-    <div className="min-h-screen bg-bg">
-      <header className="bg-navy-primary">
-        <div className="max-w-6xl mx-auto px-6 sm:px-8 py-4 flex items-center justify-between">
-          <div className="font-heading font-bold text-white text-lg">Abeekey Admin</div>
-          <div className="flex items-center gap-5">
-            <span className="text-sm text-white/70 hidden sm:inline">{user.name}</span>
-            <button
-              onClick={() => logout().then(() => router.push('/'))}
-              className="text-sm font-medium text-white/75 hover:text-white transition-colors"
-            >
-              Log out
-            </button>
-          </div>
-        </div>
-        <nav className="max-w-6xl mx-auto px-6 sm:px-8 flex gap-6 overflow-x-auto border-t border-white/10">
-          {visibleNav.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="py-3 text-sm font-medium text-white/70 hover:text-white whitespace-nowrap"
-            >
-              {item.label}
-            </a>
-          ))}
-        </nav>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-6 sm:px-8 py-10">{children}</main>
-    </div>
+    <DashboardSidebar
+      brand="Abeekey Admin"
+      rootHref="/admin"
+      groups={visibleGroups}
+      userName={user.name}
+      onLogout={() => logout().then(() => router.push('/'))}
+    >
+      {children}
+    </DashboardSidebar>
   );
 }

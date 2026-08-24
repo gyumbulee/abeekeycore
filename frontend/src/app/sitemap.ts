@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { fetchPublic, BlogPost } from '@/lib/api';
+import { fetchPublic, BlogPost, PortfolioProject } from '@/lib/api';
 
 const baseUrl = 'https://abeekey.com';
 
@@ -60,5 +60,35 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     postEntries = [];
   }
 
-  return [...staticEntries, ...postEntries];
+  // Same reasoning as the blog walk above: the public /portfolio endpoint
+  // paginates at 9 projects too, so this has to walk every page or a
+  // sitemap covering only page 1 would silently miss projects published
+  // after the first 9.
+  let projectEntries: MetadataRoute.Sitemap = [];
+  try {
+    const allProjects: PortfolioProject[] = [];
+    let page = 1;
+    let lastPage = 1;
+
+    do {
+      const res = await fetchPublic<{ data: PortfolioProject[]; meta: { last_page: number } }>(
+        `/portfolio?page=${page}`,
+        3600
+      );
+      allProjects.push(...res.data);
+      lastPage = res.meta.last_page;
+      page++;
+    } while (page <= lastPage);
+
+    projectEntries = allProjects.map((project) => ({
+      url: `${baseUrl}/portfolio/${project.slug}`,
+      lastModified: project.published_at ? new Date(project.published_at) : new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    }));
+  } catch {
+    projectEntries = [];
+  }
+
+  return [...staticEntries, ...postEntries, ...projectEntries];
 }
