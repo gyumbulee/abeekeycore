@@ -20,9 +20,8 @@ class WebhookController extends Controller
         $signature = $request->header('verif-hash');
         $expected = config('services.flutterwave.webhook_hash');
 
-        if (! $expected || $signature !== $expected) {
+        if (! $expected || ! $signature || ! hash_equals($expected, $signature)) {
             Log::warning('Rejected Flutterwave webhook with invalid/missing signature.');
-
             return response()->json(['message' => 'Invalid signature.'], 401);
         }
 
