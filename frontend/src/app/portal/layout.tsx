@@ -78,7 +78,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       groups={PORTAL_NAV}
       userName={user.name}
       onLogout={() => logout().then(() => router.push('/'))}
-      headerExtra={<WhatsAppButton variant="dark" />}
+      headerExtra={<WhatsAppButton variant="responsive" />}
       footer={<Footer />}
     >
       {children}

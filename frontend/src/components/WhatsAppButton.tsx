@@ -1,18 +1,30 @@
 interface WhatsAppButtonProps {
-  variant?: 'dark' | 'light';
+  /**
+   * 'dark'/'light' assume a background that stays the same color across
+   * breakpoints (e.g. the public Navbar, always navy). 'responsive' is for
+   * headers like the admin/portal DashboardSidebar's, whose background
+   * switches from navy on mobile to the light page background on
+   * desktop (`bg-navy-primary md:bg-transparent`) — using 'dark' there
+   * left the text white on both, making it invisible once past the `md`
+   * breakpoint.
+   */
+  variant?: 'dark' | 'light' | 'responsive';
   className?: string;
 }
 
 const WHATSAPP_NUMBER = '2349066772894'; // 0906 677 2894 in international format, no leading 0
 const WHATSAPP_MESSAGE = "Hi Abeekey, I'd like to know more about your services.";
 
+const VARIANT_STYLES: Record<NonNullable<WhatsAppButtonProps['variant']>, string> = {
+  dark: 'text-white/75 hover:text-white',
+  light: 'text-navy-secondary hover:text-navy-primary',
+  responsive: 'text-white/75 hover:text-white md:text-navy-secondary md:hover:text-navy-primary',
+};
+
 export default function WhatsAppButton({ variant = 'dark', className = '' }: WhatsAppButtonProps) {
   const href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
 
-  const styles =
-    variant === 'dark'
-      ? 'text-white/75 hover:text-white'
-      : 'text-navy-secondary hover:text-navy-primary';
+  const styles = VARIANT_STYLES[variant];
 
   return (
     <a
