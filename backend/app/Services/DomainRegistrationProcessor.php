@@ -68,6 +68,7 @@ class DomainRegistrationProcessor
             $order->update([
                 'status' => 'registered',
                 'registered_at' => now(),
+                'expires_at' => now()->addYears($order->years),
             ]);
 
             // Attach the registrant's actual contact details. This is a

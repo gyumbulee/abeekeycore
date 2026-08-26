@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Wraps the ConnectReseller ESHOP API (API_v11, confirmed against their
- * official documentation — no more guessing on this one).
+ * official documentation).
  *
  * Base URL: https://api.connectreseller.com/ConnectReseller/ESHOP
  * Auth: single `APIKey` query param on every call (resellerID is only
@@ -322,6 +322,36 @@ class ConnectResellerService
         $id = $result['body']['responseData']['domainNameId'] ?? null;
 
         return $id ? (int) $id : null;
+    }
+
+    /**
+     * Renew a domain name. Confirmed endpoint (RenewalOrder, OrderType=2)
+     * per ConnectReseller's official API_v11 documentation — previously
+     * unconfirmed and left unimplemented; their docs PDF blocks automated
+     * fetching, so this was verified against a copy provided directly.
+     *
+     * $currentExpiryYear is optional per their docs but recommended to
+     * disambiguate if the domain's expiry was recently changed on their
+     * end (e.g. a manual correction) since our local records were last
+     * synced.
+     */
+    public function renewDomain(string $fullDomain, int $years, int $clientId, ?int $currentExpiryYear = null): array
+    {
+        $params = [
+            'OrderType' => 2,
+            'Websitename' => $fullDomain,
+            'Duration' => $years,
+            'IsWhoisProtection' => 'true',
+            'Id' => $clientId,
+        ];
+
+        if ($currentExpiryYear) {
+            $params['Expiryyear'] = $currentExpiryYear;
+        }
+
+        $result = $this->get('RenewalOrder', $params);
+
+        return $result['body'];
     }
 
     /**

@@ -13,6 +13,7 @@ import {
   ArrowLeftRight,
   FileSignature,
   Globe,
+  Server,
   LifeBuoy,
   Lock,
   User,
@@ -33,6 +34,7 @@ const PORTAL_NAV: SidebarNavGroup[] = [
     items: [
       { href: '/portal/contracts', label: 'Contracts', icon: FileSignature },
       { href: '/portal/domains', label: 'Domains', icon: Globe },
+      { href: '/portal/hosting', label: 'Hosting', icon: Server },
     ],
   },
   {
@@ -78,7 +80,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       groups={PORTAL_NAV}
       userName={user.name}
       onLogout={() => logout().then(() => router.push('/'))}
-      headerExtra={<WhatsAppButton variant="responsive" />}
+      headerExtra={<WhatsAppButton variant="dark" />}
       footer={<Footer />}
     >
       {children}

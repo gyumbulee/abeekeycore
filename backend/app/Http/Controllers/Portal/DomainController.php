@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\DomainOrder;
+use App\Models\DomainRenewalOrder;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\ConnectResellerService;
@@ -175,9 +176,123 @@ class DomainController extends Controller
     }
 
     /**
+     * Start a renewal for an already-registered domain. Computes price
+     * from ConnectReseller's renewal pricing (not registration pricing —
+     * these commonly differ) with the same markup applied at registration
+     * time. Reuses an existing pending_payment renewal for the same
+     * domain+years instead of creating a duplicate if checkout was
+     * abandoned and retried, same pattern as store()/pay() above.
+     */
+    public function renew(Request $request, int $domainOrderId)
+    {
+        $user = $request->user();
+        $order = $user->domainOrders()->findOrFail($domainOrderId);
+
+        if ($order->status !== 'registered') {
+            return response()->json([
+                'message' => 'Only registered domains can be renewed.',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'years' => ['required', 'integer', 'min:1', 'max:10'],
+        ]);
+
+        $catalog = $this->connectReseller->getAllTldPrices();
+        $pricing = $catalog[$order->tld] ?? null;
+
+        if (! is_array($pricing)) {
+            return response()->json([
+                'message' => 'Renewal pricing for this TLD is not currently available. Please contact support.',
+            ], 422);
+        }
+
+        $years = $validated['years'];
+        $markup = $this->connectReseller->markupMultiplier($order->tld);
+        $salePrice = round($pricing['renewal'] * $markup * $years, 2);
+
+        $renewal = DomainRenewalOrder::where('domain_order_id', $order->id)
+            ->where('status', 'pending_payment')
+            ->first();
+
+        if ($renewal) {
+            $renewal->update(['years' => $years, 'sale_price' => $salePrice]);
+        } else {
+            $renewal = DomainRenewalOrder::create([
+                'domain_order_id' => $order->id,
+                'user_id' => $user->id,
+                'years' => $years,
+                'sale_price' => $salePrice,
+                'currency' => $pricing['currency'] ?: config('domains.default_currency', 'NGN'),
+                'status' => 'pending_payment',
+                'previous_expiry_at' => $order->expires_at,
+            ]);
+        }
+
+        return $this->initiateRenewalCheckout($renewal, $order, $user);
+    }
+
+    protected function initiateRenewalCheckout(DomainRenewalOrder $renewal, DomainOrder $order, User $user)
+    {
+        Transaction::where('id', $renewal->transaction_id)
+            ->where('status', 'pending')
+            ->update(['status' => 'failed']);
+
+        $txRef = 'ABK-RENEW-'.strtoupper(Str::random(10));
+
+        $transaction = Transaction::create([
+            'user_id' => $user->id,
+            'tx_ref' => $txRef,
+            'amount' => $renewal->sale_price,
+            'currency' => $renewal->currency,
+            'status' => 'pending',
+        ]);
+
+        $renewal->update(['transaction_id' => $transaction->id, 'status' => 'pending_payment', 'failure_reason' => null]);
+
+        $frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:3000'), '/');
+
+        $response = $this->flutterwave->initializePayment([
+            'tx_ref' => $txRef,
+            'amount' => (string) $renewal->sale_price,
+            'currency' => $renewal->currency,
+            'redirect_url' => "{$frontendUrl}/portal/domains/payment-callback",
+            'customer' => [
+                'email' => $user->email,
+                'name' => $user->name,
+            ],
+            'customizations' => [
+                'title' => 'Abeekey — Domain Renewal',
+                'description' => "Renewal for {$order->domain_name}{$order->tld} ({$renewal->years} yr)",
+            ],
+        ]);
+
+        if (($response['status'] ?? null) !== 'success') {
+            $transaction->update(['status' => 'failed', 'meta' => $response]);
+
+            return response()->json([
+                'message' => $response['message'] ?? 'Unable to initiate payment. Please try again.',
+            ], 502);
+        }
+
+        $paymentData = is_array($response['data'] ?? null) ? $response['data'] : [];
+
+        return response()->json([
+            'data' => [
+                'payment_link' => $paymentData['link'] ?? null,
+                'tx_ref' => $txRef,
+                'renewal' => $renewal,
+            ],
+        ], 201);
+    }
+
+    /**
      * Called by the frontend on redirect-back from Flutterwave — confirms
-     * payment and (via PaymentReconciler -> DomainRegistrationProcessor)
-     * triggers the actual domain registration.
+     * payment and (via PaymentReconciler) triggers either domain
+     * registration or domain renewal, whichever this transaction is
+     * actually linked to. Both a fresh registration and a renewal redirect
+     * to the same /portal/domains/payment-callback page, so this checks
+     * for both and returns whichever applies.
      */
     public function verify(Request $request)
     {
@@ -197,7 +312,8 @@ class DomainController extends Controller
         }
 
         $order = DomainOrder::where('transaction_id', $transaction->id)->first();
+        $renewal = DomainRenewalOrder::where('transaction_id', $transaction->id)->with('domainOrder')->first();
 
-        return response()->json(['data' => ['transaction' => $transaction, 'order' => $order]]);
+        return response()->json(['data' => ['transaction' => $transaction, 'order' => $order, 'renewal' => $renewal]]);
     }
 }

@@ -39,6 +39,10 @@ export default function Footer() {
               Services
             </a>
 
+            <a href="/hosting" className="block text-sm mb-3 hover:text-white transition-colors">
+              Hosting
+            </a>
+
             <a href="/industries" className="block text-sm mb-3 hover:text-white transition-colors">
               Industries
             </a>

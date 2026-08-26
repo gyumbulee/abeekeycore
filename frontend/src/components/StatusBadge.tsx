@@ -20,6 +20,7 @@ const STATUS_STYLES: Record<string, string> = {
   draft: 'bg-slate-200 text-text-soft',
   reviewed: 'bg-warning/10 text-warning',
   in_progress: 'bg-warning/10 text-warning',
+  provisioning: 'bg-warning/10 text-warning',
 
   overdue: 'bg-danger/10 text-danger',
   declined: 'bg-danger/10 text-danger',
@@ -27,6 +28,7 @@ const STATUS_STYLES: Record<string, string> = {
   lost: 'bg-danger/10 text-danger',
   failed: 'bg-danger/10 text-danger',
   registration_failed: 'bg-danger/10 text-danger',
+  provisioning_failed: 'bg-danger/10 text-danger',
   cancelled: 'bg-danger/10 text-danger',
   closed: 'bg-slate-200 text-text-soft',
 

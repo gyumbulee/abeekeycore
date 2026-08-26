@@ -3,13 +3,12 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { api, DomainOrder, DomainRenewalOrder } from '@/lib/api';
+import { api, HostingOrder } from '@/lib/api';
 
 function CallbackContent() {
   const params = useSearchParams();
   const [state, setState] = useState<'checking' | 'success' | 'failed' | 'error'>('checking');
-  const [order, setOrder] = useState<DomainOrder | null>(null);
-  const [renewal, setRenewal] = useState<DomainRenewalOrder | null>(null);
+  const [order, setOrder] = useState<HostingOrder | null>(null);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -29,10 +28,9 @@ function CallbackContent() {
     }
 
     api
-      .verifyDomainPayment(txRef)
+      .verifyHostingPayment(txRef)
       .then((res) => {
         setOrder(res.data.order);
-        setRenewal(res.data.renewal);
         setState(res.data.transaction.status === 'successful' ? 'success' : 'failed');
       })
       .catch((err) => {
@@ -60,30 +58,16 @@ function CallbackContent() {
             <div className="text-3xl mb-3">✅</div>
             <h1 className="font-heading font-bold text-navy-primary text-xl mb-2">Payment successful</h1>
             <p className="text-text-soft text-sm mb-6">
-              {renewal?.status === 'completed' &&
-                `${renewal.domainOrder?.domain_name}${renewal.domainOrder?.tld} has been renewed until ${
-                  renewal.new_expiry_at
-                    ? new Date(renewal.new_expiry_at).toLocaleDateString('en-NG', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })
-                    : 'the new expiry date'
-                }.`}
-              {renewal?.status === 'processing' && 'Renewal is in progress — this can take a few minutes.'}
-              {renewal?.status === 'failed' &&
-                `Payment succeeded, but renewal failed: ${renewal.failure_reason || 'please contact support.'}`}
-              {!renewal && order?.status === 'registered' && `${order.domain_name}${order.tld} has been registered.`}
-              {!renewal && order?.status === 'processing' && 'Registration is in progress — this can take a few minutes.'}
-              {!renewal &&
-                order?.status === 'registration_failed' &&
-                `Payment succeeded, but registration failed: ${order.failure_reason || 'please contact support.'}`}
+              {order?.status === 'active' && `${order.domain_name} is now live — check your email for access details.`}
+              {order?.status === 'provisioning' && 'Your site is being set up — this can take a few minutes.'}
+              {order?.status === 'provisioning_failed' &&
+                `Payment succeeded, but setup failed: ${order.failure_reason || 'please contact support.'}`}
             </p>
             <Link
-              href="/portal/domains"
+              href="/portal/hosting"
               className="inline-flex px-5 py-2.5 rounded-sm text-sm font-semibold text-white bg-gradient-to-br from-blue-primary to-blue-accent"
             >
-              View My Domains
+              View My Hosting
             </Link>
           </>
         )}
@@ -96,7 +80,7 @@ function CallbackContent() {
               {message || 'The payment was not successful. No charge should have been made.'}
             </p>
             <Link
-              href="/#domain-search"
+              href="/portal/hosting/purchase"
               className="inline-flex px-5 py-2.5 rounded-sm text-sm font-semibold text-white bg-gradient-to-br from-blue-primary to-blue-accent"
             >
               Try Again
@@ -112,10 +96,10 @@ function CallbackContent() {
             </h1>
             <p className="text-text-soft text-sm mb-6">{message}</p>
             <Link
-              href="/portal/domains"
+              href="/portal/hosting"
               className="inline-flex px-5 py-2.5 rounded-sm text-sm font-semibold text-white bg-gradient-to-br from-blue-primary to-blue-accent"
             >
-              View My Domains
+              View My Hosting
             </Link>
           </>
         )}
@@ -124,7 +108,7 @@ function CallbackContent() {
   );
 }
 
-export default function DomainPaymentCallbackPage() {
+export default function HostingPaymentCallbackPage() {
   return (
     <Suspense fallback={null}>
       <CallbackContent />

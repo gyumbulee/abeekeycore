@@ -17,6 +17,11 @@ export default function DomainsPage() {
   const [payingId, setPayingId] = useState<number | null>(null);
   const [payError, setPayError] = useState<{ id: number; message: string } | null>(null);
 
+  const [renewingId, setRenewingId] = useState<number | null>(null);
+  const [renewYears, setRenewYears] = useState(1);
+  const [renewSubmittingId, setRenewSubmittingId] = useState<number | null>(null);
+  const [renewError, setRenewError] = useState<{ id: number; message: string } | null>(null);
+
   useEffect(() => {
     api
       .getDomainOrders()
@@ -42,6 +47,32 @@ export default function DomainsPage() {
         message: err instanceof Error ? err.message : 'Failed to start payment.',
       });
       setPayingId(null);
+    }
+  }
+
+  function openRenewPanel(orderId: number) {
+    setRenewingId(orderId);
+    setRenewYears(1);
+    setRenewError(null);
+  }
+
+  async function handleConfirmRenewal(orderId: number) {
+    setRenewSubmittingId(orderId);
+    setRenewError(null);
+    try {
+      const res = await api.renewDomainOrder(orderId, { years: renewYears });
+      if (res.data.payment_link) {
+        window.location.href = res.data.payment_link;
+      } else {
+        setRenewError({ id: orderId, message: 'Payment link unavailable. Please try again.' });
+        setRenewSubmittingId(null);
+      }
+    } catch (err) {
+      setRenewError({
+        id: orderId,
+        message: err instanceof Error ? err.message : 'Failed to start renewal.',
+      });
+      setRenewSubmittingId(null);
     }
   }
 
@@ -81,6 +112,7 @@ export default function DomainsPage() {
                 <p className="text-text-soft text-sm">
                   {order.years} year{order.years > 1 ? 's' : ''}
                   {order.status === 'registered' && ` · Registered ${formatDate(order.registered_at)}`}
+                  {order.status === 'registered' && ` · Expires ${formatDate(order.expires_at)}`}
                   {order.status === 'registration_failed' && order.failure_reason && (
                     <span className="text-danger"> · {order.failure_reason}</span>
                   )}
@@ -101,6 +133,52 @@ export default function DomainsPage() {
                 >
                   {payingId === order.id ? 'Redirecting to payment...' : 'Complete Payment'}
                 </button>
+              </div>
+            )}
+
+            {order.status === 'registered' && (
+              <div className="border-t border-slate-100 mt-4 pt-4">
+                {renewingId !== order.id ? (
+                  <button
+                    onClick={() => openRenewPanel(order.id)}
+                    className="px-5 py-2.5 rounded-sm text-sm font-semibold text-navy-primary border border-slate-300 hover:border-blue-accent transition-colors"
+                  >
+                    Renew Domain
+                  </button>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="text-sm text-text-soft">
+                      Renew for{' '}
+                      <select
+                        value={renewYears}
+                        onChange={(e) => setRenewYears(Number(e.target.value))}
+                        className="border border-slate-300 rounded-sm px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-accent"
+                      >
+                        {Array.from({ length: 10 }, (_, i) => i + 1).map((y) => (
+                          <option key={y} value={y}>
+                            {y} year{y > 1 ? 's' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <button
+                      onClick={() => handleConfirmRenewal(order.id)}
+                      disabled={renewSubmittingId === order.id}
+                      className="px-5 py-2.5 rounded-sm text-sm font-semibold text-white bg-gradient-to-br from-blue-primary to-blue-accent disabled:opacity-60"
+                    >
+                      {renewSubmittingId === order.id ? 'Redirecting to payment...' : 'Continue to Payment'}
+                    </button>
+                    <button
+                      onClick={() => setRenewingId(null)}
+                      className="text-sm text-text-soft hover:text-navy-primary"
+                    >
+                      Cancel
+                    </button>
+                    {renewError?.id === order.id && (
+                      <p className="text-danger text-xs w-full">{renewError.message}</p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

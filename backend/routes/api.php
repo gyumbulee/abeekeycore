@@ -14,10 +14,13 @@ use App\Http\Controllers\Admin\UploadController as AdminUploadController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\TransactionController as AdminTransactionController;
+use App\Http\Controllers\Portal\HostingController as PortalHostingController;
+use App\Http\Controllers\Admin\HostingPlanController as AdminHostingPlanController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DomainController;
+use App\Http\Controllers\HostingController;
 use App\Http\Controllers\Portal\ContractController;
 use App\Http\Controllers\Portal\DomainController as PortalDomainController;
 use App\Http\Controllers\Portal\InvoiceController;
@@ -60,6 +63,10 @@ Route::get('/blog/{slug}', [BlogController::class, 'show']);
 Route::get('/portfolio', [PortfolioController::class, 'index']);
 Route::get('/portfolio/industries', [PortfolioController::class, 'industries']);
 Route::get('/portfolio/{slug}', [PortfolioController::class, 'show']);
+
+Route::get('/hosting-plans', [HostingController::class, 'index']);
+Route::get('/hosting-plans/{slug}', [HostingController::class, 'show']);
+
 
 /*
 |--------------------------------------------------------------------------
@@ -125,6 +132,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/domains', [PortalDomainController::class, 'store']);
         Route::post('/domains/verify', [PortalDomainController::class, 'verify']);
         Route::post('/domains/{id}/pay', [PortalDomainController::class, 'pay']);
+        Route::post('/domains/{id}/renew', [PortalDomainController::class, 'renew']);
+
+        Route::get('/hosting', [PortalHostingController::class, 'index']);
+        Route::post('/hosting', [PortalHostingController::class, 'store']);
+        Route::post('/hosting/verify', [PortalHostingController::class, 'verify']);
+        Route::post('/hosting/{id}/pay', [PortalHostingController::class, 'pay']);
     });
 
     /*
@@ -173,6 +186,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::middleware('permission:domains')->group(function () {
             Route::get('/domains', [AdminDomainController::class, 'index']);
+            Route::get('/domain-renewals', [AdminDomainController::class, 'renewals']);
         });
 
         Route::middleware('permission:contacts')->group(function () {
@@ -213,6 +227,19 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/users/permissions', [AdminUserController::class, 'permissions']);
             Route::post('/users', [AdminUserController::class, 'store']);
             Route::patch('/users/{id}', [AdminUserController::class, 'update']);
+        });
+
+        Route::middleware('permission:hosting')->group(function () {
+            Route::get('/hosting-plans', [AdminHostingPlanController::class, 'index']);
+            Route::get('/hosting-plans/{id}', [AdminHostingPlanController::class, 'show']);
+            Route::post('/hosting-plans', [AdminHostingPlanController::class, 'store']);
+            Route::patch('/hosting-plans/{id}', [AdminHostingPlanController::class, 'update']);
+            Route::delete('/hosting-plans/{id}', [AdminHostingPlanController::class, 'destroy']);
+
+            Route::get('/hosting-orders', [AdminHostingController::class, 'index']);
+            Route::get('/hosting-orders/{id}', [AdminHostingController::class, 'show']);
+            Route::post('/hosting-orders/{id}/retry', [AdminHostingController::class, 'retry']);
+            Route::post('/hosting-orders/{id}/cancel', [AdminHostingController::class, 'cancel']);
         });
 
         // Domain pricing settings — 'settings' is likewise never grantable

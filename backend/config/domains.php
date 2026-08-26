@@ -49,6 +49,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Expiry Reminders
+    |--------------------------------------------------------------------------
+    | Days before expires_at at which to email the client a renewal
+    | reminder. Checked daily by domains:send-expiry-reminders (see
+    | routes/console.php). Each threshold fires once per order — already-
+    | sent thresholds are tracked in domain_orders.expiry_reminders_sent so
+    | re-running the command doesn't double-send.
+    */
+    'expiry_reminder_days' => [30, 14, 7, 1],
+
+    /*
+    |--------------------------------------------------------------------------
     | Search Limits
     |--------------------------------------------------------------------------
     | ConnectReseller's bulkDomainCheck genuinely takes a while per batch —

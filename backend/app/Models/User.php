@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\HostingOrder;
 
 class User extends Authenticatable
 {
@@ -91,6 +92,11 @@ class User extends Authenticatable
         return $this->hasMany(DomainOrder::class);
     }
 
+    public function domainRenewalOrders(): HasMany
+    {
+        return $this->hasMany(DomainRenewalOrder::class);
+    }
+
     public function otps(): HasMany
     {
         return $this->hasMany(EmailOtp::class);
@@ -104,5 +110,10 @@ class User extends Authenticatable
     public function blogPosts(): HasMany
     {
         return $this->hasMany(BlogPost::class, 'author_id');
+    }
+
+    public function hostingOrders()
+    {
+        return $this->hasMany(HostingOrder::class);
     }
 }

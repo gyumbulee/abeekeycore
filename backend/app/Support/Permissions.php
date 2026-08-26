@@ -30,6 +30,7 @@ class Permissions
         'support-tickets' => 'Support Tickets',
         'blog' => 'Blog / CMS',
         'portfolio' => 'Portfolio / Case Studies',
+        'hosting' => 'Hosting',
     ];
 
     public static function keys(): array

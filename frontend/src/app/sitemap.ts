@@ -8,6 +8,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/',
     '/about',
     '/services',
+    '/hosting',
     '/industries',
     '/portfolio',
     '/training',
@@ -24,7 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority:
       route === '/'
         ? 1
-        : ['/services', '/portfolio', '/contact', '/blog'].includes(route)
+        : ['/services', '/hosting', '/portfolio', '/contact', '/blog'].includes(route)
           ? 0.8
           : 0.6,
   }));

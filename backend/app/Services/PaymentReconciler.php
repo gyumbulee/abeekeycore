@@ -7,7 +7,10 @@ use Illuminate\Support\Str;
 
 class PaymentReconciler
 {
-    public function __construct(protected DomainRegistrationProcessor $domainProcessor) {}
+    public function __construct(
+        protected DomainRegistrationProcessor $domainProcessor,
+        protected DomainRenewalProcessor $renewalProcessor
+    ) {}
 
     /**
      * Given a verified Flutterwave transaction payload (the "data" object from
@@ -56,6 +59,7 @@ class PaymentReconciler
         $transaction = $transaction->fresh();
 
         $this->domainProcessor->processIfApplicable($transaction);
+        $this->renewalProcessor->processIfApplicable($transaction);
 
         return $transaction;
     }

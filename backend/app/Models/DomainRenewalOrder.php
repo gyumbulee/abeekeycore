@@ -5,38 +5,36 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class DomainOrder extends Model
+class DomainRenewalOrder extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'domain_order_id',
         'user_id',
         'transaction_id',
-        'domain_name',
-        'tld',
         'years',
-        'cost_price',
         'sale_price',
         'currency',
         'status',
-        'registrant',
-        'connect_reseller_order_id',
+        'previous_expiry_at',
+        'new_expiry_at',
         'failure_reason',
-        'registered_at',
-        'expires_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'registrant' => 'array',
-            'cost_price' => 'decimal:2',
             'sale_price' => 'decimal:2',
-            'registered_at' => 'datetime',
-            'expires_at' => 'datetime',
+            'previous_expiry_at' => 'datetime',
+            'new_expiry_at' => 'datetime',
         ];
+    }
+
+    public function domainOrder(): BelongsTo
+    {
+        return $this->belongsTo(DomainOrder::class);
     }
 
     public function user(): BelongsTo
@@ -47,10 +45,5 @@ class DomainOrder extends Model
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class);
-    }
-
-    public function renewalOrders(): HasMany
-    {
-        return $this->hasMany(DomainRenewalOrder::class);
     }
 }

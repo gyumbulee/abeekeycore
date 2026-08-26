@@ -1,11 +1,17 @@
-﻿const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+﻿const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+
 const API_ROOT = API_URL.replace(/\/api\/?$/, '');
 
 export class ApiError extends Error {
   status: number;
   body: Record<string, unknown>;
 
-  constructor(message: string, status: number, body: Record<string, unknown>) {
+  constructor(
+    message: string,
+    status: number,
+    body: Record<string, unknown>
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
@@ -20,7 +26,10 @@ export class ApiError extends Error {
  * page's generateMetadata, which runs before any client code and has no
  * DOM to read cookies from.
  */
-export async function fetchPublic<T>(path: string, revalidateSeconds = 300): Promise<T> {
+export async function fetchPublic<T>(
+  path: string,
+  revalidateSeconds = 300
+): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     headers: { Accept: 'application/json' },
     next: { revalidate: revalidateSeconds },
@@ -40,23 +49,36 @@ export async function fetchPublic<T>(path: string, revalidateSeconds = 300): Pro
  * next POST). Safe to call multiple times.
  */
 async function getCsrfCookie(): Promise<void> {
-  await fetch(`${API_ROOT}/sanctum/csrf-cookie`, { credentials: 'include' });
+  await fetch(`${API_ROOT}/sanctum/csrf-cookie`, {
+    credentials: 'include',
+  });
 }
 
 function readCookie(name: string): string | null {
-  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  const match = document.cookie.match(
+    new RegExp(`(?:^|; )${name}=([^;]*)`)
+  );
+
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const xsrfToken = typeof document !== 'undefined' ? readCookie('XSRF-TOKEN') : null;
+async function request<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const xsrfToken =
+    typeof document !== 'undefined'
+      ? readCookie('XSRF-TOKEN')
+      : null;
 
   const res = await fetch(`${API_URL}${path}`, {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
-      ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+      ...(xsrfToken
+        ? { 'X-XSRF-TOKEN': xsrfToken }
+        : {}),
       ...options.headers,
     },
     ...options,
@@ -64,10 +86,18 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new ApiError(body.message || 'Request failed', res.status, body);
+
+    throw new ApiError(
+      body.message || 'Request failed',
+      res.status,
+      body
+    );
   }
 
-  if (res.status === 204) return undefined as T;
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
   return res.json();
 }
 
@@ -77,22 +107,35 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
  * correct boundary automatically when the body is a FormData instance;
  * setting it manually here would break upload parsing on the server.
  */
-async function requestMultipart<T>(path: string, formData: FormData): Promise<T> {
-  const xsrfToken = typeof document !== 'undefined' ? readCookie('XSRF-TOKEN') : null;
+async function requestMultipart<T>(
+  path: string,
+  formData: FormData
+): Promise<T> {
+  const xsrfToken =
+    typeof document !== 'undefined'
+      ? readCookie('XSRF-TOKEN')
+      : null;
 
   const res = await fetch(`${API_URL}${path}`, {
     method: 'POST',
     credentials: 'include',
     headers: {
       Accept: 'application/json',
-      ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+      ...(xsrfToken
+        ? { 'X-XSRF-TOKEN': xsrfToken }
+        : {}),
     },
     body: formData,
   });
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new ApiError(body.message || 'Request failed', res.status, body);
+
+    throw new ApiError(
+      body.message || 'Request failed',
+      res.status,
+      body
+    );
   }
 
   return res.json();
@@ -153,7 +196,10 @@ export interface BlogPost {
   status: 'draft' | 'published';
   published_at: string | null;
   created_at: string;
-  author?: { id: number; name: string } | null;
+  author?: {
+    id: number;
+    name: string;
+  } | null;
 }
 
 export interface BlogPaginationMeta {
@@ -171,7 +217,8 @@ export interface CreateBlogPostPayload {
   status: 'draft' | 'published';
 }
 
-export type UpdateBlogPostPayload = Partial<CreateBlogPostPayload>;
+export type UpdateBlogPostPayload =
+  Partial<CreateBlogPostPayload>;
 
 export interface PortfolioProject {
   id: number;
@@ -189,7 +236,10 @@ export interface PortfolioProject {
   completed_at: string | null;
   published_at: string | null;
   created_at: string;
-  author?: { id: number; name: string } | null;
+  author?: {
+    id: number;
+    name: string;
+  } | null;
 }
 
 export interface CreatePortfolioProjectPayload {
@@ -206,7 +256,8 @@ export interface CreatePortfolioProjectPayload {
   completed_at?: string;
 }
 
-export type UpdatePortfolioProjectPayload = Partial<CreatePortfolioProjectPayload>;
+export type UpdatePortfolioProjectPayload =
+  Partial<CreatePortfolioProjectPayload>;
 
 export interface AuthUser {
   id: number;
@@ -267,7 +318,12 @@ export interface PortalQuotation {
   title: string;
   amount_total: string;
   currency: string;
-  status: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
+  status:
+    | 'draft'
+    | 'sent'
+    | 'accepted'
+    | 'declined'
+    | 'expired';
   valid_until: string | null;
   items: LineItem[];
 }
@@ -277,7 +333,13 @@ export interface Contract {
   contract_number: string;
   title: string;
   summary: string | null;
-  status: 'draft' | 'sent' | 'signed' | 'active' | 'completed' | 'terminated';
+  status:
+    | 'draft'
+    | 'sent'
+    | 'signed'
+    | 'active'
+    | 'completed'
+    | 'terminated';
   start_date: string | null;
   end_date: string | null;
   file_path: string | null;
@@ -301,7 +363,7 @@ export interface ContactMessageRecord {
 export interface DomainSearchResult {
   domain: string;
   tld: string;
-  available: boolean | null; // null = registrar couldn't be reached
+  available: boolean | null;
   price: number;
   currency: string;
 }
@@ -315,7 +377,7 @@ export interface Registrant {
   city: string;
   state: string;
   postal_code?: string;
-  country: string; // ISO 2-letter, e.g. NG
+  country: string;
 }
 
 export interface CreateDomainOrderPayload {
@@ -325,6 +387,14 @@ export interface CreateDomainOrderPayload {
   registrant: Registrant;
 }
 
+/**
+ * Added from File 2:
+ * Payload used when requesting a domain renewal.
+ */
+export interface CreateDomainRenewalPayload {
+  years: number;
+}
+
 export interface DomainOrder {
   id: number;
   domain_name: string;
@@ -332,17 +402,122 @@ export interface DomainOrder {
   years: number;
   sale_price: string;
   currency: string;
-  status: 'pending_payment' | 'processing' | 'registered' | 'registration_failed' | 'cancelled';
+  status:
+    | 'pending_payment'
+    | 'processing'
+    | 'registered'
+    | 'registration_failed'
+    | 'cancelled';
   connect_reseller_order_id: string | null;
   failure_reason: string | null;
   registered_at: string | null;
+  expires_at: string | null;
   created_at: string;
+}
+
+/**
+ * Added from File 2:
+ * Represents a domain renewal transaction/order.
+ */
+export interface DomainRenewalOrder {
+  id: number;
+  domain_order_id: number;
+  years: number;
+  sale_price: string;
+  currency: string;
+  status:
+    | 'pending_payment'
+    | 'processing'
+    | 'completed'
+    | 'failed'
+    | 'cancelled';
+  previous_expiry_at: string | null;
+  new_expiry_at: string | null;
+  failure_reason: string | null;
+  created_at: string;
+  domainOrder?: {
+    id: number;
+    domain_name: string;
+    tld: string;
+  };
+}
+
+export interface HostingPlan {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  disk_gb: number;
+  bandwidth_gb: number | null;
+  website_count: number;
+  email_accounts: number | null;
+  databases: number | null;
+  free_ssl: boolean;
+  features: string[] | null;
+  price_monthly: string;
+  price_annual: string;
+  currency: string;
+  php_version: string;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface CreateHostingPlanPayload {
+  name: string;
+  description?: string;
+  disk_gb: number;
+  bandwidth_gb?: number;
+  website_count: number;
+  email_accounts?: number;
+  databases?: number;
+  free_ssl?: boolean;
+  features?: string[];
+  price_monthly: number;
+  price_annual: number;
+  php_version: string;
+  is_active?: boolean;
+  sort_order?: number;
+}
+
+export type UpdateHostingPlanPayload =
+  Partial<CreateHostingPlanPayload>;
+
+export interface CreateHostingOrderPayload {
+  hosting_plan_id: number;
+  domain_name: string;
+  billing_cycle: 'monthly' | 'annual';
+  domain_order_id?: number;
+}
+
+export interface HostingOrder {
+  id: number;
+  domain_name: string;
+  billing_cycle: 'monthly' | 'annual';
+  sale_price: string;
+  currency: string;
+  status:
+    | 'pending_payment'
+    | 'provisioning'
+    | 'active'
+    | 'provisioning_failed'
+    | 'cancelled';
+  site_user: string | null;
+  failure_reason: string | null;
+  provisioned_at: string | null;
+  expires_at: string | null;
+  created_at: string;
+  plan?: HostingPlan;
+  domain_order_id: number | null;
 }
 
 export interface Transaction {
   id: number;
   invoice_id: number | null;
-  invoice?: { id: number; invoice_number: string } | null;
+  invoice?: {
+    id: number;
+    invoice_number: string;
+  } | null;
   tx_ref: string;
   flw_transaction_id: string | null;
   amount: string;
@@ -363,7 +538,12 @@ export interface Lead {
   service_interest: string;
   project_summary: string;
   budget_range: string | null;
-  status: 'new' | 'reviewed' | 'quoted' | 'won' | 'lost';
+  status:
+    | 'new'
+    | 'reviewed'
+    | 'quoted'
+    | 'won'
+    | 'lost';
   created_at: string;
 }
 
@@ -381,7 +561,8 @@ export interface ClientAccount {
   email: string;
 }
 
-export interface ClientAccountDetailed extends ClientAccount {
+export interface ClientAccountDetailed
+  extends ClientAccount {
   created_at: string;
   invoices_count: number;
   quotations_count: number;
@@ -427,175 +608,425 @@ export interface MarkInvoicePaidPayload {
 
 export const adminApi = {
   getLeads: (status?: string) =>
-    request<{ data: Lead[] }>(`/admin/leads${status ? `?status=${status}` : ''}`),
+    request<{ data: Lead[] }>(
+      `/admin/leads${status ? `?status=${status}` : ''}`
+    ),
 
   getLead: (id: number) =>
-    request<{ data: Lead }>(`/admin/leads/${id}`),
+    request<{ data: Lead }>(
+      `/admin/leads/${id}`
+    ),
 
-  convertLead: (id: number, payload: ConvertLeadPayload) =>
-    request<{ data: PortalQuotation; message: string }>(`/admin/leads/${id}/convert`, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
+  convertLead: (
+    id: number,
+    payload: ConvertLeadPayload
+  ) =>
+    request<{
+      data: PortalQuotation;
+      message: string;
+    }>(
+      `/admin/leads/${id}/convert`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
+    ),
 
   getClients: () =>
-    request<{ data: ClientAccountDetailed[] }>('/admin/clients'),
+    request<{
+      data: ClientAccountDetailed[];
+    }>('/admin/clients'),
 
   getInvoices: () =>
-    request<{ data: (Invoice & { user: ClientAccount })[] }>('/admin/invoices'),
+    request<{
+      data: (Invoice & {
+        user: ClientAccount;
+      })[];
+    }>('/admin/invoices'),
 
-  createInvoice: (payload: CreateInvoicePayload) =>
-    request<{ data: Invoice & { user: ClientAccount } }>('/admin/invoices', {
+  createInvoice: (
+    payload: CreateInvoicePayload
+  ) =>
+    request<{
+      data: Invoice & {
+        user: ClientAccount;
+      };
+    }>('/admin/invoices', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
-  markInvoicePaid: (id: number, payload: MarkInvoicePaidPayload) =>
-    request<{ data: Invoice & { user: ClientAccount } }>(`/admin/invoices/${id}/mark-paid`, {
+  markInvoicePaid: (
+    id: number,
+    payload: MarkInvoicePaidPayload
+  ) =>
+    request<{
+      data: Invoice & {
+        user: ClientAccount;
+      };
+    }>(`/admin/invoices/${id}/mark-paid`, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
   getQuotations: () =>
-    request<{ data: (PortalQuotation & { user: ClientAccount })[] }>('/admin/quotations'),
+    request<{
+      data: (PortalQuotation & {
+        user: ClientAccount;
+      })[];
+    }>('/admin/quotations'),
 
-  createQuotation: (payload: CreateQuotationPayload) =>
-    request<{ data: PortalQuotation & { user: ClientAccount } }>('/admin/quotations', {
+  createQuotation: (
+    payload: CreateQuotationPayload
+  ) =>
+    request<{
+      data: PortalQuotation & {
+        user: ClientAccount;
+      };
+    }>('/admin/quotations', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
-  updateQuotationStatus: (id: number, payload: UpdateQuotationStatusPayload) =>
-    request<{ data: PortalQuotation & { user: ClientAccount } }>(`/admin/quotations/${id}`, {
+  updateQuotationStatus: (
+    id: number,
+    payload: UpdateQuotationStatusPayload
+  ) =>
+    request<{
+      data: PortalQuotation & {
+        user: ClientAccount;
+      };
+    }>(`/admin/quotations/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
 
   getContracts: () =>
-    request<{ data: (Contract & { user: ClientAccount })[] }>('/admin/contracts'),
+    request<{
+      data: (Contract & {
+        user: ClientAccount;
+      })[];
+    }>('/admin/contracts'),
 
-  createContract: (payload: CreateContractPayload) =>
-    request<{ data: Contract & { user: ClientAccount } }>('/admin/contracts', {
+  createContract: (
+    payload: CreateContractPayload
+  ) =>
+    request<{
+      data: Contract & {
+        user: ClientAccount;
+      };
+    }>('/admin/contracts', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
   getTransactions: () =>
-    request<{ data: (Transaction & { user: ClientAccount })[] }>('/admin/transactions'),
+    request<{
+      data: (Transaction & {
+        user: ClientAccount;
+      })[];
+    }>('/admin/transactions'),
 
   getDomainOrders: () =>
-    request<{ data: (DomainOrder & { user: ClientAccount })[] }>('/admin/domains'),
+    request<{
+      data: (DomainOrder & {
+        user: ClientAccount;
+      })[];
+    }>('/admin/domains'),
 
-  getContacts: (status?: string) =>
-    request<{ data: ContactMessageRecord[] }>(
-      `/admin/contacts${status ? `?status=${status}` : ''}`
+  getHostingPlans: () =>
+    request<{
+      data: HostingPlan[];
+    }>('/admin/hosting-plans'),
+
+  getHostingPlan: (id: number) =>
+    request<{
+      data: HostingPlan;
+    }>(`/admin/hosting-plans/${id}`),
+
+  createHostingPlan: (
+    payload: CreateHostingPlanPayload
+  ) =>
+    request<{
+      data: HostingPlan;
+    }>('/admin/hosting-plans', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  updateHostingPlan: (
+    id: number,
+    payload: UpdateHostingPlanPayload
+  ) =>
+    request<{
+      data: HostingPlan;
+    }>(`/admin/hosting-plans/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  deleteHostingPlan: (id: number) =>
+    request<{
+      message: string;
+    }>(`/admin/hosting-plans/${id}`, {
+      method: 'DELETE',
+    }),
+
+  getHostingOrders: () =>
+    request<{
+      data: (HostingOrder & {
+        user: ClientAccount;
+      })[];
+    }>('/admin/hosting-orders'),
+
+  getHostingOrder: (id: number) =>
+    request<{
+      data: HostingOrder & {
+        user: ClientAccount;
+      };
+    }>(`/admin/hosting-orders/${id}`),
+
+  retryHostingOrder: (id: number) =>
+    request<{
+      data: HostingOrder;
+    }>(
+      `/admin/hosting-orders/${id}/retry`,
+      {
+        method: 'POST',
+      }
     ),
 
-  replyToContact: (id: number, reply: string) =>
-    request<{ data: ContactMessageRecord }>(`/admin/contacts/${id}/reply`, {
+  cancelHostingOrder: (id: number) =>
+    request<{
+      data: HostingOrder;
+    }>(
+      `/admin/hosting-orders/${id}/cancel`,
+      {
+        method: 'POST',
+      }
+    ),
+
+  getContacts: (status?: string) =>
+    request<{
+      data: ContactMessageRecord[];
+    }>(
+      `/admin/contacts${
+        status ? `?status=${status}` : ''
+      }`
+    ),
+
+  replyToContact: (
+    id: number,
+    reply: string
+  ) =>
+    request<{
+      data: ContactMessageRecord;
+    }>(`/admin/contacts/${id}/reply`, {
       method: 'POST',
       body: JSON.stringify({ reply }),
     }),
 
-  getAdminSupportTickets: (status?: string) =>
-    request<{ data: (SupportTicket & { user: ClientAccount })[] }>(
-      `/admin/support-tickets${status ? `?status=${status}` : ''}`
+  getAdminSupportTickets: (
+    status?: string
+  ) =>
+    request<{
+      data: (SupportTicket & {
+        user: ClientAccount;
+      })[];
+    }>(
+      `/admin/support-tickets${
+        status ? `?status=${status}` : ''
+      }`
     ),
 
   getAdminSupportTicket: (id: number) =>
-    request<{ data: SupportTicket & { user: ClientAccount } }>(`/admin/support-tickets/${id}`),
+    request<{
+      data: SupportTicket & {
+        user: ClientAccount;
+      };
+    }>(
+      `/admin/support-tickets/${id}`
+    ),
 
-  replyToSupportTicket: (id: number, message: string, status?: SupportTicket['status']) =>
-    request<{ data: SupportTicketMessage }>(`/admin/support-tickets/${id}/messages`, {
+  replyToSupportTicket: (
+    id: number,
+    message: string,
+    status?: SupportTicket['status']
+  ) =>
+    request<{
+      data: SupportTicketMessage;
+    }>(`/admin/support-tickets/${id}/messages`, {
       method: 'POST',
-      body: JSON.stringify({ message, status }),
+      body: JSON.stringify({
+        message,
+        status,
+      }),
     }),
 
-  updateSupportTicket: (id: number, payload: { status?: SupportTicket['status']; priority?: SupportTicket['priority'] }) =>
-    request<{ data: SupportTicket & { user: ClientAccount } }>(`/admin/support-tickets/${id}`, {
+  updateSupportTicket: (
+    id: number,
+    payload: {
+      status?: SupportTicket['status'];
+      priority?: SupportTicket['priority'];
+    }
+  ) =>
+    request<{
+      data: SupportTicket & {
+        user: ClientAccount;
+      };
+    }>(`/admin/support-tickets/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
 
   getStaffAccounts: () =>
-    request<{ data: StaffAccount[] }>('/admin/users'),
+    request<{
+      data: StaffAccount[];
+    }>('/admin/users'),
 
   getPermissionOptions: () =>
-    request<{ data: PermissionOption[] }>('/admin/users/permissions'),
+    request<{
+      data: PermissionOption[];
+    }>('/admin/users/permissions'),
 
-  createStaffAccount: (payload: CreateStaffPayload) =>
-    request<{ data: StaffAccount }>('/admin/users', {
+  createStaffAccount: (
+    payload: CreateStaffPayload
+  ) =>
+    request<{
+      data: StaffAccount;
+    }>('/admin/users', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
-  updateStaffAccount: (id: number, payload: UpdateStaffPayload) =>
-    request<{ data: StaffAccount }>(`/admin/users/${id}`, {
+  updateStaffAccount: (
+    id: number,
+    payload: UpdateStaffPayload
+  ) =>
+    request<{
+      data: StaffAccount;
+    }>(`/admin/users/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
 
   getSettings: () =>
-    request<{ data: SettingsOverview }>('/admin/settings'),
+    request<{
+      data: SettingsOverview;
+    }>('/admin/settings'),
 
-  updateSettings: (payload: UpdateSettingsPayload) =>
-    request<{ data: SettingsOverview }>('/admin/settings', {
+  updateSettings: (
+    payload: UpdateSettingsPayload
+  ) =>
+    request<{
+      data: SettingsOverview;
+    }>('/admin/settings', {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
 
   getBlogPosts: () =>
-    request<{ data: BlogPost[] }>('/admin/blog-posts'),
+    request<{
+      data: BlogPost[];
+    }>('/admin/blog-posts'),
 
   getBlogPost: (id: number) =>
-    request<{ data: BlogPost }>(`/admin/blog-posts/${id}`),
+    request<{
+      data: BlogPost;
+    }>(`/admin/blog-posts/${id}`),
 
-  createBlogPost: (payload: CreateBlogPostPayload) =>
-    request<{ data: BlogPost }>('/admin/blog-posts', {
+  createBlogPost: (
+    payload: CreateBlogPostPayload
+  ) =>
+    request<{
+      data: BlogPost;
+    }>('/admin/blog-posts', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
-  updateBlogPost: (id: number, payload: UpdateBlogPostPayload) =>
-    request<{ data: BlogPost }>(`/admin/blog-posts/${id}`, {
+  updateBlogPost: (
+    id: number,
+    payload: UpdateBlogPostPayload
+  ) =>
+    request<{
+      data: BlogPost;
+    }>(`/admin/blog-posts/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
 
   deleteBlogPost: (id: number) =>
-    request<{ message: string }>(`/admin/blog-posts/${id}`, {
+    request<{
+      message: string;
+    }>(`/admin/blog-posts/${id}`, {
       method: 'DELETE',
     }),
 
-  uploadImage: (file: File, folder?: 'blog-uploads' | 'portfolio-uploads') => {
+  uploadImage: (
+    file: File,
+    folder?: 'blog-uploads' | 'portfolio-uploads'
+  ) => {
     const formData = new FormData();
+
     formData.append('image', file);
-    if (folder) formData.append('folder', folder);
-    return requestMultipart<{ data: { url: string } }>('/admin/uploads/image', formData);
+
+    if (folder) {
+      formData.append('folder', folder);
+    }
+
+    return requestMultipart<{
+      data: {
+        url: string;
+      };
+    }>('/admin/uploads/image', formData);
   },
 
   getPortfolioProjects: () =>
-    request<{ data: PortfolioProject[] }>('/admin/portfolio-projects'),
+    request<{
+      data: PortfolioProject[];
+    }>('/admin/portfolio-projects'),
 
   getPortfolioProject: (id: number) =>
-    request<{ data: PortfolioProject }>(`/admin/portfolio-projects/${id}`),
+    request<{
+      data: PortfolioProject;
+    }>(
+      `/admin/portfolio-projects/${id}`
+    ),
 
-  createPortfolioProject: (payload: CreatePortfolioProjectPayload) =>
-    request<{ data: PortfolioProject }>('/admin/portfolio-projects', {
+  createPortfolioProject: (
+    payload: CreatePortfolioProjectPayload
+  ) =>
+    request<{
+      data: PortfolioProject;
+    }>('/admin/portfolio-projects', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
-  updatePortfolioProject: (id: number, payload: UpdatePortfolioProjectPayload) =>
-    request<{ data: PortfolioProject }>(`/admin/portfolio-projects/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(payload),
-    }),
+  updatePortfolioProject: (
+    id: number,
+    payload: UpdatePortfolioProjectPayload
+  ) =>
+    request<{
+      data: PortfolioProject;
+    }>(
+      `/admin/portfolio-projects/${id}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      }
+    ),
 
   deletePortfolioProject: (id: number) =>
-    request<{ message: string }>(`/admin/portfolio-projects/${id}`, {
-      method: 'DELETE',
-    }),
+    request<{
+      message: string;
+    }>(
+      `/admin/portfolio-projects/${id}`,
+      {
+        method: 'DELETE',
+      }
+    ),
 };
 
 export interface SettingValue<T> {
@@ -606,7 +1037,9 @@ export interface SettingValue<T> {
 export interface DomainSettings {
   markup_percent: SettingValue<number>;
   usd_to_ngn_rate: SettingValue<number>;
-  tld_markup_overrides: SettingValue<Record<string, number>>;
+  tld_markup_overrides: SettingValue<
+    Record<string, number>
+  >;
 }
 
 export interface SettingsOverview {
@@ -616,7 +1049,10 @@ export interface SettingsOverview {
 export interface UpdateSettingsPayload {
   markup_percent?: number;
   usd_to_ngn_rate?: number;
-  tld_markup_overrides?: Record<string, number>;
+  tld_markup_overrides?: Record<
+    string,
+    number
+  >;
 }
 
 export interface StaffAccount {
@@ -666,7 +1102,11 @@ export interface SupportTicketMessage {
   id: number;
   message: string;
   is_staff: boolean;
-  user?: { id: number; name: string; role: string };
+  user?: {
+    id: number;
+    name: string;
+    role: string;
+  };
   created_at: string;
 }
 
@@ -674,7 +1114,11 @@ export interface SupportTicket {
   id: number;
   ticket_number: string;
   subject: string;
-  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  status:
+    | 'open'
+    | 'in_progress'
+    | 'resolved'
+    | 'closed';
   priority: 'low' | 'normal' | 'high';
   last_message_at: string | null;
   created_at: string;
@@ -689,50 +1133,93 @@ export interface CreateSupportTicketPayload {
 
 export const api = {
   getServices: () =>
-    request<{ data: { slug: string; name: string; icon: string }[] }>('/services'),
+    request<{
+      data: {
+        slug: string;
+        name: string;
+        icon: string;
+      }[];
+    }>('/services'),
 
-  getBlogPosts: (category?: string, page = 1) =>
-    request<{ data: BlogPost[]; meta: BlogPaginationMeta }>(
-      `/blog?page=${page}${category ? `&category=${encodeURIComponent(category)}` : ''}`
+  getBlogPosts: (
+    category?: string,
+    page = 1
+  ) =>
+    request<{
+      data: BlogPost[];
+      meta: BlogPaginationMeta;
+    }>(
+      `/blog?page=${page}${
+        category
+          ? `&category=${encodeURIComponent(category)}`
+          : ''
+      }`
     ),
 
   getBlogCategories: () =>
-    request<{ data: string[] }>('/blog/categories'),
+    request<{
+      data: string[];
+    }>('/blog/categories'),
 
   getBlogPost: (slug: string) =>
-    request<{ data: BlogPost }>(`/blog/${slug}`),
+    request<{
+      data: BlogPost;
+    }>(`/blog/${slug}`),
 
-  getPortfolioProjects: (industry?: string, page = 1) =>
-    request<{ data: PortfolioProject[]; meta: BlogPaginationMeta }>(
-      `/portfolio?page=${page}${industry ? `&industry=${encodeURIComponent(industry)}` : ''}`
+  getPortfolioProjects: (
+    industry?: string,
+    page = 1
+  ) =>
+    request<{
+      data: PortfolioProject[];
+      meta: BlogPaginationMeta;
+    }>(
+      `/portfolio?page=${page}${
+        industry
+          ? `&industry=${encodeURIComponent(industry)}`
+          : ''
+      }`
     ),
 
   getPortfolioIndustries: () =>
-    request<{ data: string[] }>('/portfolio/industries'),
+    request<{
+      data: string[];
+    }>('/portfolio/industries'),
 
-  submitContact: (payload: ContactPayload) =>
+  submitContact: (
+    payload: ContactPayload
+  ) =>
     request('/contact', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
-  submitQuotation: (payload: QuotationPayload) =>
+  submitQuotation: (
+    payload: QuotationPayload
+  ) =>
     request('/quotation-requests', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
   getTrainingCourses: () =>
-    request<{ data: TrainingCourse[] }>('/training/courses'),
+    request<{
+      data: TrainingCourse[];
+    }>('/training/courses'),
 
-  submitTrainingApplication: (payload: TrainingApplicationPayload) =>
+  submitTrainingApplication: (
+    payload: TrainingApplicationPayload
+  ) =>
     request('/training/applications', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
   // --- Auth (Sanctum SPA / cookie-based) ---
-  register: async (payload: RegisterPayload) => {
+
+  register: async (
+    payload: RegisterPayload
+  ) => {
     await getCsrfCookie();
 
     return request<{
@@ -747,101 +1234,185 @@ export const api = {
     });
   },
 
-  login: async (payload: LoginPayload) => {
+  login: async (
+    payload: LoginPayload
+  ) => {
     await getCsrfCookie();
-    return request<{ data: AuthUser }>('/auth/login', {
+
+    return request<{
+      data: AuthUser;
+    }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
   },
 
-  verifyOtp: async (email: string, code: string) => {
+  verifyOtp: async (
+    email: string,
+    code: string
+  ) => {
     await getCsrfCookie();
 
-    return request<{ data: AuthUser }>('/auth/verify-otp', {
+    return request<{
+      data: AuthUser;
+    }>('/auth/verify-otp', {
       method: 'POST',
-      body: JSON.stringify({ email, code }),
+      body: JSON.stringify({
+        email,
+        code,
+      }),
     });
   },
 
   resendOtp: (email: string) =>
-    request<{ message: string }>('/auth/resend-otp', {
+    request<{
+      message: string;
+    }>('/auth/resend-otp', {
       method: 'POST',
       body: JSON.stringify({ email }),
     }),
 
   logout: () =>
-    request('/auth/logout', { method: 'POST' }),
+    request('/auth/logout', {
+      method: 'POST',
+    }),
 
   me: () =>
-    request<{ data: AuthUser }>('/auth/me'),
+    request<{
+      data: AuthUser;
+    }>('/auth/me'),
 
   // --- Client Portal (authenticated) ---
-  updateProfile: (payload: UpdateProfilePayload) =>
-    request<{ data: AuthUser }>('/portal/profile', {
+
+  updateProfile: (
+    payload: UpdateProfilePayload
+  ) =>
+    request<{
+      data: AuthUser;
+    }>('/portal/profile', {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
 
-  updatePassword: (payload: UpdatePasswordPayload) =>
-    request<{ message: string }>('/portal/profile/password', {
+  updatePassword: (
+    payload: UpdatePasswordPayload
+  ) =>
+    request<{
+      message: string;
+    }>('/portal/profile/password', {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
 
   getSecurityOverview: () =>
-    request<{ data: SecurityOverview }>('/portal/security'),
+    request<{
+      data: SecurityOverview;
+    }>('/portal/security'),
 
-  logoutOtherSessions: (password: string) =>
-    request<{ message: string }>('/portal/security/logout-other-sessions', {
-      method: 'POST',
-      body: JSON.stringify({ password }),
-    }),
+  logoutOtherSessions: (
+    password: string
+  ) =>
+    request<{
+      message: string;
+    }>(
+      '/portal/security/logout-other-sessions',
+      {
+        method: 'POST',
+        body: JSON.stringify({ password }),
+      }
+    ),
 
   getSupportTickets: () =>
-    request<{ data: SupportTicket[] }>('/portal/support-tickets'),
+    request<{
+      data: SupportTicket[];
+    }>('/portal/support-tickets'),
 
   getSupportTicket: (id: number) =>
-    request<{ data: SupportTicket }>(`/portal/support-tickets/${id}`),
+    request<{
+      data: SupportTicket;
+    }>(
+      `/portal/support-tickets/${id}`
+    ),
 
-  createSupportTicket: (payload: CreateSupportTicketPayload) =>
-    request<{ data: SupportTicket }>('/portal/support-tickets', {
+  createSupportTicket: (
+    payload: CreateSupportTicketPayload
+  ) =>
+    request<{
+      data: SupportTicket;
+    }>('/portal/support-tickets', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
-  addSupportTicketMessage: (id: number, message: string) =>
-    request<{ data: SupportTicketMessage }>(`/portal/support-tickets/${id}/messages`, {
-      method: 'POST',
-      body: JSON.stringify({ message }),
-    }),
+  addSupportTicketMessage: (
+    id: number,
+    message: string
+  ) =>
+    request<{
+      data: SupportTicketMessage;
+    }>(
+      `/portal/support-tickets/${id}/messages`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ message }),
+      }
+    ),
 
   getInvoices: () =>
-    request<{ data: Invoice[] }>('/portal/invoices'),
+    request<{
+      data: Invoice[];
+    }>('/portal/invoices'),
 
   getInvoice: (id: number) =>
-    request<{ data: Invoice }>(`/portal/invoices/${id}`),
+    request<{
+      data: Invoice;
+    }>(`/portal/invoices/${id}`),
 
   getPortalQuotations: () =>
-    request<{ data: PortalQuotation[] }>('/portal/quotations'),
+    request<{
+      data: PortalQuotation[];
+    }>('/portal/quotations'),
 
   getPortalQuotation: (id: number) =>
-    request<{ data: PortalQuotation }>(`/portal/quotations/${id}`),
+    request<{
+      data: PortalQuotation;
+    }>(
+      `/portal/quotations/${id}`
+    ),
 
-  respondToQuotation: (id: number, decision: 'accepted' | 'declined') =>
-    request<{ data: PortalQuotation }>(`/portal/quotations/${id}/respond`, {
-      method: 'POST',
-      body: JSON.stringify({ decision }),
-    }),
+  respondToQuotation: (
+    id: number,
+    decision: 'accepted' | 'declined'
+  ) =>
+    request<{
+      data: PortalQuotation;
+    }>(
+      `/portal/quotations/${id}/respond`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ decision }),
+      }
+    ),
 
   getContracts: () =>
-    request<{ data: Contract[] }>('/portal/contracts'),
+    request<{
+      data: Contract[];
+    }>('/portal/contracts'),
 
   getContract: (id: number) =>
-    request<{ data: Contract }>(`/portal/contracts/${id}`),
+    request<{
+      data: Contract;
+    }>(
+      `/portal/contracts/${id}`
+    ),
 
   payInvoice: (invoiceId: number) =>
-    request<{ data: { payment_link: string; tx_ref: string } }>(
+    request<{
+      data: {
+        payment_link: string;
+        tx_ref: string;
+      };
+    }>(
       `/portal/invoices/${invoiceId}/pay`,
       {
         method: 'POST',
@@ -849,46 +1420,161 @@ export const api = {
     ),
 
   verifyPayment: (txRef: string) =>
-    request<{ data: Transaction }>('/portal/payments/verify', {
+    request<{
+      data: Transaction;
+    }>('/portal/payments/verify', {
       method: 'POST',
-      body: JSON.stringify({ tx_ref: txRef }),
+      body: JSON.stringify({
+        tx_ref: txRef,
+      }),
     }),
 
   getTransactions: () =>
-    request<{ data: Transaction[] }>('/portal/transactions'),
+    request<{
+      data: Transaction[];
+    }>('/portal/transactions'),
 
   getTransaction: (id: number) =>
-    request<{ data: Transaction }>(`/portal/transactions/${id}`),
+    request<{
+      data: Transaction;
+    }>(
+      `/portal/transactions/${id}`
+    ),
 
   searchDomains: (query: string) =>
-    request<{ data: DomainSearchResult[] }>(
+    request<{
+      data: DomainSearchResult[];
+    }>(
       `/domains/search?query=${encodeURIComponent(query)}`
     ),
 
   getDomainOrders: () =>
-    request<{ data: DomainOrder[] }>('/portal/domains'),
+    request<{
+      data: DomainOrder[];
+    }>('/portal/domains'),
 
-  createDomainOrder: (payload: CreateDomainOrderPayload) =>
-    request<{ data: { payment_link: string; tx_ref: string; order: DomainOrder } }>(
-      '/portal/domains',
+  createDomainOrder: (
+    payload: CreateDomainOrderPayload
+  ) =>
+    request<{
+      data: {
+        payment_link: string;
+        tx_ref: string;
+        order: DomainOrder;
+      };
+    }>('/portal/domains', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  /**
+   * Verifies a domain payment.
+   *
+   * The response can now represent either:
+   * - a normal domain registration (`order`)
+   * - a domain renewal (`renewal`)
+   *
+   * Added `renewal` from File 2.
+   */
+  verifyDomainPayment: (txRef: string) =>
+    request<{
+      data: {
+        transaction: Transaction;
+        order: DomainOrder | null;
+        renewal: DomainRenewalOrder | null;
+      };
+    }>('/portal/domains/verify', {
+      method: 'POST',
+      body: JSON.stringify({
+        tx_ref: txRef,
+      }),
+    }),
+
+  payDomainOrder: (orderId: number) =>
+    request<{
+      data: {
+        payment_link: string;
+        tx_ref: string;
+        order: DomainOrder;
+      };
+    }>(
+      `/portal/domains/${orderId}/pay`,
+      {
+        method: 'POST',
+      }
+    ),
+
+  /**
+   * Renews an existing domain.
+   *
+   * Added from File 2.
+   */
+  renewDomainOrder: (
+    orderId: number,
+    payload: CreateDomainRenewalPayload
+  ) =>
+    request<{
+      data: {
+        payment_link: string;
+        tx_ref: string;
+        renewal: DomainRenewalOrder;
+      };
+    }>(
+      `/portal/domains/${orderId}/renew`,
       {
         method: 'POST',
         body: JSON.stringify(payload),
       }
     ),
 
-  verifyDomainPayment: (txRef: string) =>
-    request<{ data: { transaction: Transaction; order: DomainOrder | null } }>(
-      '/portal/domains/verify',
-      {
-        method: 'POST',
-        body: JSON.stringify({ tx_ref: txRef }),
-      }
-    ),
+  // --- Hosting ---
 
-  payDomainOrder: (orderId: number) =>
-    request<{ data: { payment_link: string; tx_ref: string; order: DomainOrder } }>(
-      `/portal/domains/${orderId}/pay`,
+  getHostingPlans: () =>
+    request<{
+      data: HostingPlan[];
+    }>('/hosting-plans'),
+
+  getHostingOrders: () =>
+    request<{
+      data: HostingOrder[];
+    }>('/portal/hosting'),
+
+  createHostingOrder: (
+    payload: CreateHostingOrderPayload
+  ) =>
+    request<{
+      data: {
+        payment_link: string;
+        tx_ref: string;
+        order: HostingOrder;
+      };
+    }>('/portal/hosting', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  verifyHostingPayment: (txRef: string) =>
+    request<{
+      data: {
+        transaction: Transaction;
+        order: HostingOrder | null;
+      };
+    }>('/portal/hosting/verify', {
+      method: 'POST',
+      body: JSON.stringify({
+        tx_ref: txRef,
+      }),
+    }),
+
+  payHostingOrder: (orderId: number) =>
+    request<{
+      data: {
+        payment_link: string;
+        tx_ref: string;
+        order: HostingOrder;
+      };
+    }>(
+      `/portal/hosting/${orderId}/pay`,
       {
         method: 'POST',
       }
