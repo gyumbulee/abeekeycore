@@ -197,6 +197,14 @@ function LoginContent() {
               className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-accent"
             />
 
+            {mode === 'login' && (
+              <p className="text-right -mt-2">
+                <Link href="/forgot-password" className="text-xs text-blue-primary font-medium hover:underline">
+                  Forgot password?
+                </Link>
+              </p>
+            )}
+
             {mode === 'register' && (
               <input
                 required

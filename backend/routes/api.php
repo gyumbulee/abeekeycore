@@ -86,10 +86,12 @@ Route::post('/webhooks/flutterwave', [WebhookController::class, 'flutterwave']);
 | credentials: 'include'.
 */
 
-Route::post('/auth/register', [AuthController::class, 'register']);
-Route::post('/auth/login', [AuthController::class, 'login']);
-Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp']);
-Route::post('/auth/resend-otp', [AuthController::class, 'resendOtp']);
+Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:5,10'); // 5 registrations per 10 minutes per IP
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:6,1'); // 6 attempts per minute per IP — standard credential-stuffing guard
+Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp'])->middleware('throttle:10,10'); // 10 attempts per 10 minutes per IP — a 6-digit code is brute-forceable well inside its validity window without this
+Route::post('/auth/resend-otp', [AuthController::class, 'resendOtp'])->middleware('throttle:3,10'); // 3 resends per 10 minutes per IP
+Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:3,10'); // 3 requests per 10 minutes per IP
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:6,10'); // 6 attempts per 10 minutes per IP
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);

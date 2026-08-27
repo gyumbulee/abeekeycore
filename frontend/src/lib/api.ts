@@ -30,9 +30,18 @@ export async function fetchPublic<T>(
   path: string,
   revalidateSeconds = 300
 ): Promise<T> {
+  // In development, always hit the API fresh — a cached empty/stale
+  // response otherwise sticks around for up to `revalidateSeconds`
+  // regardless of how many times the page is reloaded, which makes
+  // locally-added data (e.g. a hosting plan just created via admin)
+  // appear to not exist until the cache window expires.
+  const isDev = process.env.NODE_ENV === 'development';
+
   const res = await fetch(`${API_URL}${path}`, {
     headers: { Accept: 'application/json' },
-    next: { revalidate: revalidateSeconds },
+    ...(isDev
+      ? { cache: 'no-store' as const }
+      : { next: { revalidate: revalidateSeconds } }),
   });
 
   if (!res.ok) {
@@ -1271,6 +1280,33 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email }),
     }),
+
+  forgotPassword: async (email: string) => {
+    await getCsrfCookie();
+
+    return request<{
+      message: string;
+    }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  resetPassword: async (payload: {
+    email: string;
+    token: string;
+    password: string;
+    password_confirmation: string;
+  }) => {
+    await getCsrfCookie();
+
+    return request<{
+      message: string;
+    }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
 
   logout: () =>
     request('/auth/logout', {

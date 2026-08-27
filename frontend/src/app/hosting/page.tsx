@@ -26,7 +26,8 @@ async function getPlans(): Promise<HostingPlan[]> {
   try {
     const res = await fetchPublic<{ data: HostingPlan[] }>('/hosting-plans');
     return res.data;
-  } catch {
+  } catch (err) {
+    console.error('Failed to load hosting plans:', err);
     return [];
   }
 }

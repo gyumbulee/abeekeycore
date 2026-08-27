@@ -10,9 +10,12 @@ class EmailOtp extends Model
     protected $fillable = [
         'user_id',
         'code',
+        'attempts',
         'expires_at',
         'consumed_at',
     ];
+
+    public const MAX_ATTEMPTS = 5;
 
     protected function casts(): array
     {
@@ -29,6 +32,8 @@ class EmailOtp extends Model
 
     public function isValid(): bool
     {
-        return is_null($this->consumed_at) && $this->expires_at->isFuture();
+        return is_null($this->consumed_at)
+            && $this->expires_at->isFuture()
+            && $this->attempts < self::MAX_ATTEMPTS;
     }
 }

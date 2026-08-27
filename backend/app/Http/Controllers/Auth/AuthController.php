@@ -3,15 +3,18 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Mail\OtpVerificationMail;
+use App\Mail\PasswordResetMail;
 use App\Mail\WelcomeMail;
 use App\Models\EmailOtp;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class AuthController extends Controller
 {
@@ -26,7 +29,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'confirmed', Password::min(8)],
+            'password' => ['required', 'confirmed', PasswordRule::min(8)],
         ]);
 
         $user = User::create([
@@ -62,12 +65,17 @@ class AuthController extends Controller
         }
 
         $otp = $user->otps()
-            ->where('code', $validated['code'])
             ->whereNull('consumed_at')
             ->latest()
             ->first();
 
         if (! $otp || ! $otp->isValid()) {
+            return response()->json(['message' => 'This code is invalid or has expired.'], 422);
+        }
+
+        if ($otp->code !== $validated['code']) {
+            $otp->increment('attempts');
+
             return response()->json(['message' => 'This code is invalid or has expired.'], 422);
         }
 
@@ -166,6 +174,67 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         return response()->json(['data' => $request->user()]);
+    }
+
+    /**
+     * Send a password reset link. Deliberately returns the same message
+     * whether or not the email has an account, to avoid leaking which
+     * emails are registered — same pattern as resendOtp().
+     */
+    public function forgotPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:3000'), '/');
+
+        Password::sendResetLink(
+            $validated,
+            function (User $user, string $token) use ($frontendUrl) {
+                $resetUrl = $frontendUrl.'/reset-password?token='.$token.'&email='.urlencode($user->email);
+
+                try {
+                    Mail::to($user->email)->send(new PasswordResetMail($user, $resetUrl));
+                } catch (\Throwable $e) {
+                    Log::error('Failed to send password reset email: '.$e->getMessage());
+                }
+            }
+        );
+
+        return response()->json([
+            'message' => 'If that email has an account, a password reset link has been sent.',
+        ]);
+    }
+
+    /**
+     * Complete a password reset using the token emailed via forgotPassword().
+     * Logs out every other session for the account once the password is
+     * changed, same as a self-service security measure.
+     */
+    public function resetPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+            'token' => ['required', 'string'],
+            'password' => ['required', 'confirmed', PasswordRule::min(8)],
+        ]);
+
+        $status = Password::reset(
+            $validated,
+            function (User $user) use ($validated) {
+                $user->update(['password' => Hash::make($validated['password'])]);
+                DB::table('sessions')->where('user_id', $user->id)->delete();
+            }
+        );
+
+        if ($status !== Password::PASSWORD_RESET) {
+            return response()->json([
+                'message' => 'This reset link is invalid or has expired. Please request a new one.',
+            ], 422);
+        }
+
+        return response()->json(['message' => 'Your password has been reset. You can now log in.']);
     }
 
     protected function issueOtp(User $user): void

@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class SupportTicketController extends Controller
 {
@@ -50,11 +51,20 @@ class SupportTicketController extends Controller
         $ticket = DB::transaction(function () use ($user, $validated) {
             $ticket = SupportTicket::create([
                 'user_id' => $user->id,
-                'ticket_number' => 'TKT-'.now()->format('Y').'-'.str_pad((string) (SupportTicket::max('id') + 1), 4, '0', STR_PAD_LEFT),
+                // Placeholder — the real number is derived below from this
+                // row's own auto-increment id, which the DB guarantees is
+                // unique. Predicting it beforehand via max(id)+1 is racy:
+                // two tickets created in the same instant can compute the
+                // same number and collide on the unique constraint.
+                'ticket_number' => 'TKT-PENDING-'.Str::random(8),
                 'subject' => $validated['subject'],
                 'status' => 'open',
                 'priority' => $validated['priority'] ?? 'normal',
                 'last_message_at' => now(),
+            ]);
+
+            $ticket->update([
+                'ticket_number' => 'TKT-'.now()->format('Y').'-'.str_pad((string) $ticket->id, 4, '0', STR_PAD_LEFT),
             ]);
 
             $ticket->messages()->create([

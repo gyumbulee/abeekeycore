@@ -10,6 +10,8 @@ interface AuthContextValue {
   register: (payload: RegisterPayload) => Promise<{ email: string }>;
   verifyOtp: (email: string, code: string) => Promise<AuthUser>;
   resendOtp: (email: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<string>;
+  resetPassword: (payload: { email: string; token: string; password: string; password_confirmation: string }) => Promise<string>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
   setUser: (user: AuthUser) => void;
@@ -59,13 +61,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await api.resendOtp(email);
   }
 
+  async function forgotPassword(email: string) {
+    const res = await api.forgotPassword(email);
+    return res.message;
+  }
+
+  async function resetPassword(payload: { email: string; token: string; password: string; password_confirmation: string }) {
+    const res = await api.resetPassword(payload);
+    return res.message;
+  }
+
   async function logout() {
     await api.logout();
     setUser(null);
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, verifyOtp, resendOtp, logout, refresh, setUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, verifyOtp, resendOtp, forgotPassword, resetPassword, logout, refresh, setUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -97,8 +97,14 @@ class UserController extends Controller
 
         $user = User::whereIn('role', ['admin', 'staff'])->findOrFail($id);
 
-        if ($user->id === $request->user()->id && array_key_exists('is_active', $validated) && ! $validated['is_active']) {
-            return response()->json(['message' => 'You cannot deactivate your own account.'], 422);
+        if ($user->id === $request->user()->id) {
+            if (array_key_exists('is_active', $validated) && ! $validated['is_active']) {
+                return response()->json(['message' => 'You cannot deactivate your own account.'], 422);
+            }
+
+            if (array_key_exists('role', $validated) || array_key_exists('permissions', $validated)) {
+                return response()->json(['message' => 'You cannot change your own role or permissions. Ask another admin to make this change.'], 422);
+            }
         }
 
         $updates = array_filter([
