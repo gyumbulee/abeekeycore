@@ -1,0 +1,12 @@
+# Place this file at https://abeekey.com/ads.txt (Next.js public/ads.txt does this automatically)
+#
+# Replace pub-XXXXXXXXXXXXXXXX with your real AdSense publisher ID
+# (find it in AdSense > Account > Account information)
+#google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
+
+google.com, pub-8926815794085059, DIRECT, f08c47fec0942fa0
+
+# Monetag will give you an exact ads.txt line in their dashboard once your
+# site is approved - it typically looks like the line below. Replace the
+# placeholder with the real one they provide.
+3nbf4.com, 11861065, DIRECT

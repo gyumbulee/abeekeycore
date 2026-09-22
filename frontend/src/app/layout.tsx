@@ -2,6 +2,8 @@
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
 import MetaPixel from '@/components/MetaPixel';
+import { ConsentProvider } from '@/components/ConsentBanner';
+import AdScripts from '@/components/AdScripts';
 
 const siteUrl = 'https://abeekey.com';
 
@@ -17,10 +19,25 @@ export const metadata: Metadata = {
     'Abeekey is a Nigerian technology company providing custom software development, websites, mobile apps, cloud and API solutions, fintech systems, IT consulting, cybersecurity, domain registration, shared hosting, and digital training.',
 
   keywords: [
+    // Global / country-agnostic
+    'custom software development',
+    'web development company',
+    'mobile app development company',
+    'software development company',
+    'IT consulting services',
+    'digital solutions provider',
+    'fintech software development',
+    'cloud and API solutions',
+    'cybersecurity services',
+    'domain registration',
+    'web hosting provider',
+    'shared hosting',
+    'digital training and courses',
+
+    // Nigeria-specific (local SEO)
     'software development Nigeria',
     'web development Nigeria',
     'mobile app development Nigeria',
-    'custom software development',
     'IT company Nigeria',
     'technology company Nigeria',
     'website development Nigeria',
@@ -28,9 +45,8 @@ export const metadata: Metadata = {
     'IT consulting Nigeria',
     'digital solutions Nigeria',
     'domain registration Nigeria',
-    'domain name registration Nigeria',
     'shared hosting Nigeria',
-    'web hosting Nigeria',
+
     'Abeekey',
   ],
 
@@ -100,10 +116,14 @@ export default function RootLayout({
   return (
     <html lang="en-NG">
       <body>
-        <AuthProvider>
-          <MetaPixel />
-          {children}
-        </AuthProvider>
+        <ConsentProvider>
+          <AuthProvider>
+            <MetaPixel />
+            {children}
+          </AuthProvider>
+
+          <AdScripts />
+        </ConsentProvider>
 
         <script
           type="application/ld+json"
