@@ -29,13 +29,18 @@ export default function AdScripts() {
       )}
 
       {monetagZoneId && (
-        // Replace src with the exact loader URL Monetag gives you in their
-        // dashboard for this zone - the format below is the typical pattern
-        // but confirm against your actual Monetag snippet before shipping.
+        // Exact mechanism from Monetag's own "Get tag" snippet for this
+        // In-Page Push zone (zone 11861415): it builds a <script> element,
+        // sets data-zone, points src at nap5k.com, and appends it to
+        // <body> (or <html> if body isn't available yet). Reproduced as-is
+        // rather than a guessed query-param URL, since Monetag's loader
+        // reads the zone id off the dataset, not the URL.
         <Script
-          async
-          src={`https://al5sm.com/tag.min.js?z=${monetagZoneId}`}
+          id="monetag-in-page-push"
           strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(s){s.dataset.zone='${monetagZoneId}',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`,
+          }}
         />
       )}
     </>
