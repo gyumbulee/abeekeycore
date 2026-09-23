@@ -4,6 +4,7 @@ import { AuthProvider } from '@/lib/auth-context';
 import MetaPixel from '@/components/MetaPixel';
 import { ConsentProvider } from '@/components/ConsentBanner';
 import AdScripts from '@/components/AdScripts';
+import AdSlot from '@/components/AdSlot';
 
 const siteUrl = 'https://abeekey.com';
 
@@ -120,6 +121,14 @@ export default function RootLayout({
           <AuthProvider>
             <MetaPixel />
             {children}
+
+            {/* Site-wide AdSense unit, shows on every page including portal
+                pages. Replace YOUR_ADSENSE_SLOT_ID once you've created an ad
+                unit in the AdSense dashboard (Ads > By ad unit).
+                Note: Monetag's In-Page Push doesn't need a placement here -
+                it's already fully wired and live via the script tag in
+                AdScripts.tsx, which injects and triggers itself. */}
+            <AdSlot network="adsense" slotId="3060233940" className="my-4" />
           </AuthProvider>
 
           <AdScripts />
